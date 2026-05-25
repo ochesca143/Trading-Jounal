@@ -289,7 +289,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
 
   <div class="del-bar" id="del-bar">
     <span id="del-count">0 selected</span>
-    <button id="del-edit-btn" class="btn" onclick="editSelected()" style="padding:6px 14px;font-size:12px;display:none;background:var(--adim);border-color:var(--acc);color:#d0ccff">Edit selected</button>
+    <button id="del-edit-btn" class="btn" onclick="editSelected()" style="padding:6px 14px;font-size:12px;background:var(--adim);border-color:var(--acc);color:#d0ccff;display:none">Edit selected</button>
     <button class="btn danger" onclick="deleteSel()" style="padding:6px 14px;font-size:12px">Delete selected</button>
     <button class="btn" onclick="clearSel()" style="padding:6px 14px;font-size:12px">Cancel</button>
   </div>
@@ -566,11 +566,6 @@ function importCSV(e){
 }
 
 // ── PASTE ZONE ────────────────────────────────────────────────────────────────
-const pz=document.getElementById('pastezone');
-
-// Click to focus so keyboard paste works
-pz.addEventListener('click',()=>pz.focus());
-
 // Global paste listener — works anywhere on the page when on Input trade tab
 document.addEventListener('paste',e=>{
   if(!document.getElementById('sec-log').classList.contains('active'))return;
@@ -586,13 +581,18 @@ document.addEventListener('paste',e=>{
   }
 });
 
-// Drag and drop as fallback
-pz.addEventListener('dragover',e=>{e.preventDefault();pz.classList.add('drag');});
-pz.addEventListener('dragleave',()=>pz.classList.remove('drag'));
-pz.addEventListener('drop',e=>{
-  e.preventDefault();pz.classList.remove('drag');
-  const f=e.dataTransfer.files[0];
-  if(f&&f.type.startsWith('image/'))processImg(f);
+document.addEventListener('DOMContentLoaded',function(){
+  const pz=document.getElementById('pastezone');
+  if(pz){
+    pz.addEventListener('click',()=>pz.focus());
+    pz.addEventListener('dragover',e=>{e.preventDefault();pz.classList.add('drag');});
+    pz.addEventListener('dragleave',()=>pz.classList.remove('drag'));
+    pz.addEventListener('drop',e=>{
+      e.preventDefault();pz.classList.remove('drag');
+      const f=e.dataTransfer.files[0];
+      if(f&&f.type.startsWith('image/'))processImg(f);
+    });
+  }
 });
 
 function processImg(file){
@@ -943,41 +943,46 @@ function sortBy(col){
 
 function toggleSel(id,cb){
   id=Number(id);
-  if(cb.checked)selectedIds.add(id);else selectedIds.delete(id);
-  updateDelBar();
-  // update row highlight without full re-render
+  if(cb.checked) selectedIds.add(id);
+  else selectedIds.delete(id);
   const row=cb.closest('tr');
   if(row) row.className=cb.checked?'selected':'';
+  updateDelBar();
 }
 function toggleRow(id,e){
   id=Number(id);
-  if(e.target.type==='checkbox'||e.target.tagName==='BUTTON')return;
+  if(e.target.type==='checkbox'||e.target.tagName==='BUTTON') return;
   const isSelected=selectedIds.has(id);
-  if(isSelected)selectedIds.delete(id);else selectedIds.add(id);
-  updateDelBar();
+  if(isSelected) selectedIds.delete(id);
+  else selectedIds.add(id);
   const row=e.currentTarget;
-  if(row) row.className=isSelected?'':'selected';
-  // sync checkbox state
-  const cb=row?.querySelector('input[type=checkbox]');
-  if(cb) cb.checked=!isSelected;
+  if(row){
+    row.className=isSelected?'':'selected';
+    const cb=row.querySelector('input[type=checkbox]');
+    if(cb) cb.checked=!isSelected;
+  }
+  updateDelBar();
 }
 function toggleAll(cb){
   filteredTrades().forEach(t=>{
-    cb.checked?selectedIds.add(Number(t.id)):selectedIds.delete(Number(t.id));
+    const id=Number(t.id);
+    cb.checked?selectedIds.add(id):selectedIds.delete(id);
   });
-  // update all row highlights
   document.querySelectorAll('.tr-table tbody tr').forEach(row=>{
     const rowCb=row.querySelector('input[type=checkbox]');
-    if(rowCb){rowCb.checked=cb.checked;row.className=cb.checked?'selected':'';}
+    if(rowCb){
+      rowCb.checked=cb.checked;
+      row.className=cb.checked?'selected':'';
+    }
   });
   updateDelBar();
 }
 function updateDelBar(){
-  const bar=document.getElementById('del-bar');
   const n=selectedIds.size;
-  bar.style.display=n>0?'flex':'none';
-  document.getElementById('del-count').textContent=n+' selected';
-  // show/hide edit button in bar
+  const bar=document.getElementById('del-bar');
+  if(bar) bar.style.display=n>0?'flex':'none';
+  const cnt=document.getElementById('del-count');
+  if(cnt) cnt.textContent=n+' selected';
   const editBtn=document.getElementById('del-edit-btn');
   if(editBtn) editBtn.style.display=n>0?'inline-flex':'none';
 }
@@ -986,18 +991,19 @@ function clearSel(){
   document.querySelectorAll('.tr-table tbody tr').forEach(row=>{
     row.className='';
     const cb=row.querySelector('input[type=checkbox]');
-    if(cb)cb.checked=false;
+    if(cb) cb.checked=false;
   });
   const selAll=document.getElementById('sel-all');
-  if(selAll)selAll.checked=false;
+  if(selAll) selAll.checked=false;
   updateDelBar();
 }
 function deleteSel(){
-  if(!selectedIds.size)return;
   const n=selectedIds.size;
-  if(!confirm('Delete '+n+' trade'+(n===1?'':'s')+'? This cannot be undone.'))return;
-  selectedIds.forEach(id=>syncToSheets('delete',{id:Number(id)}));
-  T=T.filter(t=>!selectedIds.has(Number(t.id)));
+  if(!n) return;
+  const ids=[...selectedIds].map(Number);
+  if(!window.confirm('Delete '+n+' trade'+(n===1?'':'s')+'? This cannot be undone.')) return;
+  T=T.filter(t=>!ids.includes(Number(t.id)));
+  ids.forEach(id=>syncToSheets('delete',{id}));
   selectedIds.clear();
   save();
   renderReports();
@@ -1195,10 +1201,6 @@ function saveEdit(){
   closeEdit();renderReports();
 }
 
-document.getElementById('edit-modal').addEventListener('click',function(e){
-  if(e.target===this)closeEdit();
-});
-
 // ── BULK EDIT ─────────────────────────────────────────────────────────────────
 function openBulkEdit(){
   document.getElementById('bulk-count').textContent=selectedIds.size+' trades';
@@ -1223,12 +1225,18 @@ function saveBulkEdit(){
   });
   save();closeBulkEdit();clearSel();renderReports();
 }
-document.getElementById('bulk-modal').addEventListener('click',function(e){
-  if(e.target===this)closeBulkEdit();
-});
 
-updateFooter();
-renderOv();
+// ── INIT — runs after full DOM is loaded ──────────────────────────────────────
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('edit-modal').addEventListener('click',function(e){
+    if(e.target===this)closeEdit();
+  });
+  document.getElementById('bulk-modal').addEventListener('click',function(e){
+    if(e.target===this)closeBulkEdit();
+  });
+  updateFooter();
+  renderOv();
+});
 </script>
 <!-- BULK EDIT MODAL -->
 <div class="modal-overlay" id="bulk-modal">
