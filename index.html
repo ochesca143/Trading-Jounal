@@ -113,6 +113,16 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
 .grade-B{background:var(--bbg);color:var(--blue);border:1px solid var(--bbr);}
 .grade-C{background:var(--abg);color:var(--amber);border:1px solid var(--abr);}
 .grade-D{background:var(--rbg);color:var(--red);border:1px solid var(--rbr);}
+/* Multi-select dropdown filter */
+.ms-wrap{position:relative;display:inline-block;}
+.ms-btn{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:'Syne',sans-serif;cursor:pointer;white-space:nowrap;min-width:120px;text-align:left;}
+.ms-btn:hover{border-color:var(--acc);}
+.ms-btn.active{border-color:var(--acc);color:var(--acc);}
+.ms-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px;z-index:200;min-width:200px;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+.ms-panel.open{display:block;}
+.ms-panel label{display:flex;align-items:center;gap:8px;padding:5px 8px;font-size:12px;color:var(--muted);cursor:pointer;border-radius:6px;user-select:none;}
+.ms-panel label:hover{background:rgba(255,255,255,0.04);color:var(--text);}
+.ms-panel label input{accent-color:var(--acc);width:13px;height:13px;flex-shrink:0;}
 ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
 </style>
 </head>
@@ -284,6 +294,34 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     <select id="rf-mc" onchange="renderReports()"><option value="">All contexts</option><option>Buying continuation</option><option>Selling continuation</option><option>Chop</option></select>
     <select id="rf-ex" onchange="renderReports()"><option value="">All executions</option><option>Executed to plan</option><option>Hesitated</option><option>No valid setup</option></select>
     <select id="rf-gr" onchange="renderReports()"><option value="">All grades</option><option>S</option><option>A</option><option>B</option><option>C</option><option>D</option></select>
+    <!-- Multi-select: Setup -->
+    <div class="ms-wrap" id="ms-setup-wrap">
+      <button class="ms-btn" id="ms-setup-btn" onclick="toggleMs('setup')">Setup ▾</button>
+      <div class="ms-panel" id="ms-setup-panel">
+        <label><input type="checkbox" value="Head & Shoulders" onchange="renderReports()"> Head & Shoulders</label>
+        <label><input type="checkbox" value="Cup & Handle" onchange="renderReports()"> Cup & Handle</label>
+      </div>
+    </div>
+    <!-- Multi-select: Entry criteria -->
+    <div class="ms-wrap" id="ms-entry-wrap">
+      <button class="ms-btn" id="ms-entry-btn" onclick="toggleMs('entry')">Entry criteria ▾</button>
+      <div class="ms-panel" id="ms-entry-panel">
+        <label><input type="checkbox" value="Liquidity building algo" onchange="renderReports()"> Liquidity building algo</label>
+        <label><input type="checkbox" value="Control algo" onchange="renderReports()"> Control algo</label>
+        <label><input type="checkbox" value="Precision algo" onchange="renderReports()"> Precision algo</label>
+        <label><input type="checkbox" value="Break & retest" onchange="renderReports()"> Break & retest</label>
+        <label><input type="checkbox" value="Break of" onchange="renderReports()"> Break of</label>
+        <label><input type="checkbox" value="Re-entry" onchange="renderReports()"> Re-entry</label>
+        <label><input type="checkbox" value="Good fill" onchange="renderReports()"> Good fill</label>
+        <label><input type="checkbox" value="Bad fill" onchange="renderReports()"> Bad fill</label>
+        <label><input type="checkbox" value="Wedge" onchange="renderReports()"> Wedge</label>
+        <label><input type="checkbox" value="Micro-structure" onchange="renderReports()"> Micro-structure</label>
+        <label><input type="checkbox" value="5 DMA" onchange="renderReports()"> 5 DMA</label>
+        <label><input type="checkbox" value="20 DMA" onchange="renderReports()"> 20 DMA</label>
+        <label><input type="checkbox" value="Early" onchange="renderReports()"> Early</label>
+        <label><input type="checkbox" value="Chased / FOMO" onchange="renderReports()"> Chased / FOMO</label>
+      </div>
+    </div>
     <button class="btn" onclick="clearFilters()" style="padding:6px 12px;font-size:12px">Clear filters</button>
   </div>
 
@@ -521,7 +559,33 @@ function syncToSheets(action,payload){
     method:'POST',
     body:JSON.stringify({action,...payload}),
     headers:{'Content-Type':'text/plain'}
-  }).catch(()=>{});// silent fail — localStorage is source of truth
+  })
+  .then(r=>r.json())
+  .then(data=>{
+    if(data.ok){
+      showSyncStatus('✓ Synced to Google Sheets','var(--green)');
+    } else {
+      showSyncStatus('⚠ Sheets error: '+(data.error||'unknown'),'var(--amber)');
+    }
+  })
+  .catch(err=>{
+    showSyncStatus('✗ Sheets sync failed: '+err.message,'var(--red)');
+  });
+}
+
+function showSyncStatus(msg,color){
+  let el=document.getElementById('sync-status');
+  if(!el){
+    el=document.createElement('div');
+    el.id='sync-status';
+    el.style.cssText='position:fixed;bottom:1rem;right:1rem;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px;font-family:"DM Mono",monospace;z-index:999;transition:opacity 0.5s;';
+    document.body.appendChild(el);
+  }
+  el.style.color=color;
+  el.style.opacity='1';
+  el.textContent=msg;
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>{el.style.opacity='0';},4000);
 }
 
 function saveGsUrl(){
@@ -891,6 +955,25 @@ function renderOv(){
 }
 
 // ── TRADE REPORTS ─────────────────────────────────────────────────────────────
+function getChecked(panelId){
+  return Array.from(document.querySelectorAll('#'+panelId+' input[type=checkbox]:checked')).map(c=>c.value);
+}
+function toggleMs(name){
+  const panel=document.getElementById('ms-'+name+'-panel');
+  const btn=document.getElementById('ms-'+name+'-btn');
+  const isOpen=panel.classList.contains('open');
+  // close all panels first
+  document.querySelectorAll('.ms-panel').forEach(p=>p.classList.remove('open'));
+  document.querySelectorAll('.ms-btn').forEach(b=>b.classList.remove('active'));
+  if(!isOpen){panel.classList.add('open');btn.classList.add('active');}
+}
+// Close dropdowns when clicking outside
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.ms-wrap')){
+    document.querySelectorAll('.ms-panel').forEach(p=>p.classList.remove('open'));
+    document.querySelectorAll('.ms-btn').forEach(b=>b.classList.remove('active'));
+  }
+});
 function filteredTrades(){
   let data=[...T];
   const from=document.getElementById('rf-from')?.value;
@@ -900,6 +983,8 @@ function filteredTrades(){
   const mc=document.getElementById('rf-mc')?.value;
   const ex=document.getElementById('rf-ex')?.value;
   const gr=document.getElementById('rf-gr')?.value;
+  const setups=getChecked('ms-setup-panel');
+  const entries=getChecked('ms-entry-panel');
   if(from) data=data.filter(t=>new Date(t.date)>=new Date(from));
   if(to) data=data.filter(t=>new Date(t.date)<=new Date(to));
   if(inst) data=data.filter(t=>t.inst===inst);
@@ -907,6 +992,18 @@ function filteredTrades(){
   if(mc) data=data.filter(t=>t.mc===mc);
   if(ex) data=data.filter(t=>t.exec===ex);
   if(gr) data=data.filter(t=>t.grade===gr);
+  if(setups.length) data=data.filter(t=>setups.includes(t.setup));
+  if(entries.length) data=data.filter(t=>{
+    const te=Array.isArray(t.entry)?t.entry:(t.entry?[t.entry]:[]);
+    return entries.every(e=>te.includes(e));
+  });
+  // update button labels
+  const setupBtn=document.getElementById('ms-setup-btn');
+  const entryBtn=document.getElementById('ms-entry-btn');
+  if(setupBtn) setupBtn.textContent=setups.length?'Setup ('+setups.length+') ▾':'Setup ▾';
+  if(entryBtn) entryBtn.textContent=entries.length?'Entry ('+entries.length+') ▾':'Entry criteria ▾';
+  if(setupBtn) setupBtn.className='ms-btn'+(setups.length?' active':'');
+  if(entryBtn) entryBtn.className='ms-btn'+(entries.length?' active':'');
   // sort
   data.sort((a,b)=>{
     let av=a[sortCol]||'',bv=b[sortCol]||'';
@@ -1073,6 +1170,10 @@ function editSelected(){
 function clearFilters(){
   ['rf-from','rf-to'].forEach(id=>{document.getElementById(id).value='';});
   ['rf-inst','rf-dir','rf-mc','rf-ex','rf-gr'].forEach(id=>{document.getElementById(id).value='';});
+  document.querySelectorAll('.ms-panel input[type=checkbox]').forEach(cb=>cb.checked=false);
+  document.querySelectorAll('.ms-btn').forEach(b=>{b.className='ms-btn';});
+  document.getElementById('ms-setup-btn').textContent='Setup ▾';
+  document.getElementById('ms-entry-btn').textContent='Entry criteria ▾';
   renderReports();
 }
 
