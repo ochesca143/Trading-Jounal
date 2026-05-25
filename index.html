@@ -389,6 +389,40 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
 </main>
 </div>
 
+<!-- BULK EDIT MODAL -->
+<div class="modal-overlay" id="bulk-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeBulkEdit()">✕</button>
+    <div class="modal-title">Bulk edit — <span id="bulk-count" style="color:var(--acc)"></span></div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:1.5rem">Only fields you select will be updated. Unselected fields stay as-is on each trade.</p>
+    <div class="fg" style="margin-bottom:12px"><label>Market context</label>
+      <div class="tg" id="bed-mc"><span class="tag" onclick="st(this,'bed-mc','g')">Buying continuation</span><span class="tag" onclick="st(this,'bed-mc','r')">Selling continuation</span><span class="tag" onclick="st(this,'bed-mc','a')">Chop</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Setup</label>
+      <div class="tg" id="bed-su"><span class="tag" onclick="st(this,'bed-su')">Head & Shoulders</span><span class="tag" onclick="st(this,'bed-su')">Cup & Handle</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Execution</label>
+      <div class="tg" id="bed-ex"><span class="tag" onclick="st(this,'bed-ex','g')">Executed to plan</span><span class="tag" onclick="st(this,'bed-ex','a')">Hesitated</span><span class="tag" onclick="st(this,'bed-ex','r')">No valid setup</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Protected?</label>
+      <div class="tg" id="bed-pr"><span class="tag" onclick="st(this,'bed-pr','g')">Yes</span><span class="tag" onclick="st(this,'bed-pr','r')">No</span><span class="tag" onclick="st(this,'bed-pr','a')">N/A</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:1.5rem"><label>Grade</label>
+      <div class="tg" id="bed-gr">
+        <span class="tag" onclick="st(this,'bed-gr')" style="border-color:#4c3a8a;color:#a78bfa">S</span>
+        <span class="tag" onclick="st(this,'bed-gr','g')">A</span>
+        <span class="tag" onclick="st(this,'bed-gr')" style="border-color:var(--bbr);color:var(--blue)">B</span>
+        <span class="tag" onclick="st(this,'bed-gr','a')">C</span>
+        <span class="tag" onclick="st(this,'bed-gr','r')">D</span>
+      </div>
+    </div>
+    <div class="btnrow" style="margin-top:0">
+      <button class="btn" onclick="closeBulkEdit()">Cancel</button>
+      <button class="btn btnp" onclick="saveBulkEdit()">Apply to selected</button>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT MODAL -->
 <div class="modal-overlay" id="edit-modal">
   <div class="modal">
@@ -1226,51 +1260,13 @@ function saveBulkEdit(){
   save();closeBulkEdit();clearSel();renderReports();
 }
 
-// ── INIT — runs after full DOM is loaded ──────────────────────────────────────
-document.addEventListener('DOMContentLoaded',function(){
-  document.getElementById('edit-modal').addEventListener('click',function(e){
-    if(e.target===this)closeEdit();
-  });
-  document.getElementById('bulk-modal').addEventListener('click',function(e){
-    if(e.target===this)closeBulkEdit();
-  });
-  updateFooter();
-  renderOv();
-});
+// ── INIT ──────────────────────────────────────────────────────────────────────
+// Modals are in DOM above script tag so direct binding works
+document.getElementById('edit-modal').onclick=function(e){if(e.target===this)closeEdit();};
+document.getElementById('bulk-modal').onclick=function(e){if(e.target===this)closeBulkEdit();};
+updateFooter();
+renderOv();
 </script>
-<!-- BULK EDIT MODAL -->
-<div class="modal-overlay" id="bulk-modal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeBulkEdit()">✕</button>
-    <div class="modal-title">Bulk edit — <span id="bulk-count" style="color:var(--acc)"></span></div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:1.5rem">Only fields you select will be updated. Unselected fields stay as-is on each trade.</p>
-    <div class="fg" style="margin-bottom:12px"><label>Market context</label>
-      <div class="tg" id="bed-mc"><span class="tag" onclick="st(this,'bed-mc','g')">Buying continuation</span><span class="tag" onclick="st(this,'bed-mc','r')">Selling continuation</span><span class="tag" onclick="st(this,'bed-mc','a')">Chop</span></div>
-    </div>
-    <div class="fg" style="margin-bottom:12px"><label>Setup</label>
-      <div class="tg" id="bed-su"><span class="tag" onclick="st(this,'bed-su')">Head & Shoulders</span><span class="tag" onclick="st(this,'bed-su')">Cup & Handle</span></div>
-    </div>
-    <div class="fg" style="margin-bottom:12px"><label>Execution</label>
-      <div class="tg" id="bed-ex"><span class="tag" onclick="st(this,'bed-ex','g')">Executed to plan</span><span class="tag" onclick="st(this,'bed-ex','a')">Hesitated</span><span class="tag" onclick="st(this,'bed-ex','r')">No valid setup</span></div>
-    </div>
-    <div class="fg" style="margin-bottom:12px"><label>Protected?</label>
-      <div class="tg" id="bed-pr"><span class="tag" onclick="st(this,'bed-pr','g')">Yes</span><span class="tag" onclick="st(this,'bed-pr','r')">No</span><span class="tag" onclick="st(this,'bed-pr','a')">N/A</span></div>
-    </div>
-    <div class="fg" style="margin-bottom:1.5rem"><label>Grade</label>
-      <div class="tg" id="bed-gr">
-        <span class="tag" onclick="st(this,'bed-gr')" style="border-color:#4c3a8a;color:#a78bfa">S</span>
-        <span class="tag" onclick="st(this,'bed-gr','g')">A</span>
-        <span class="tag" onclick="st(this,'bed-gr')" style="border-color:var(--bbr);color:var(--blue)">B</span>
-        <span class="tag" onclick="st(this,'bed-gr','a')">C</span>
-        <span class="tag" onclick="st(this,'bed-gr','r')">D</span>
-      </div>
-    </div>
-    <div class="btnrow" style="margin-top:0">
-      <button class="btn" onclick="closeBulkEdit()">Cancel</button>
-      <button class="btn btnp" onclick="saveBulkEdit()">Apply to selected</button>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
