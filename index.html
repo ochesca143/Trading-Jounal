@@ -100,6 +100,13 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
 .fbar input[type=date]{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;}
 .fbar input[type=date]:focus{outline:none;border-color:var(--acc);}
 .del-bar{display:none;align-items:center;gap:12px;background:var(--rbg);border:1px solid var(--rbr);border-radius:8px;padding:10px 16px;margin-bottom:1rem;font-size:13px;color:var(--red);}
+/* Edit modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2rem;width:90%;max-width:700px;max-height:90vh;overflow-y:auto;position:relative;}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:1.5rem;color:var(--text);}
+.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;}
+.modal-close:hover{color:var(--text);}
 /* Grade badges */
 .grade-S{background:#1a1040;color:#a78bfa;border:1px solid #4c3a8a;}
 .grade-A{background:var(--gbg);color:var(--green);border:1px solid var(--gbr);}
@@ -216,8 +223,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
       <div class="card">
         <div class="ctitle">Prices & size</div>
         <div class="g3" style="gap:10px;margin-bottom:0">
-          <div class="fg"><label>Entry price</label><input type="number" id="td-ep" step="0.25" placeholder="5200.00"></div>
-          <div class="fg"><label>Stop price</label><input type="number" id="td-sp" step="0.25" placeholder="5196.00"></div>
+          <div class="fg"><label>Stop size (pts)</label><input type="number" id="td-ss" step="0.25" placeholder="4.00"></div>
           <div class="fg"><label># Contracts</label><input type="number" id="td-ct" step="1" min="1" placeholder="1"></div>
         </div>
 
@@ -317,7 +323,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     const entry = Array.isArray(t.entry) ? t.entry.join(', ') : (t.entry || '');
     sheet.appendRow([
       t.id, t.date, t.lb, t.inst, t.dir, t.mc, t.setup,
-      entry, t.ep, t.sp, t.contracts, t.pnl, t.rr,
+      entry, t.ss, t.contracts, t.pnl, t.rr,
       t.exec, t.protected, t.grade, t.notes
     ]);
   }
@@ -335,7 +341,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
   if (data.action === 'init') {
     if (sheet.getLastRow() === 0) {
       sheet.appendRow(['ID','Date','Label','Instrument','Direction','Context',
-        'Setup','Entry Criteria','Entry Price','Stop Price','Contracts',
+        'Setup','Entry Criteria','Stop Size (pts)','Contracts',
         'P&L (pts)','R','Execution','Protected','Grade','Notes']);
     }
   }
@@ -380,6 +386,63 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
 </div>
 
 </main>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeEdit()">✕</button>
+    <div class="modal-title">Edit trade</div>
+    <div class="g2" style="gap:10px;margin-bottom:12px">
+      <div class="fg"><label>Label</label><input type="text" id="ed-lb"></div>
+      <div class="fg"><label>Date</label><input type="text" id="ed-dt"></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Instrument</label>
+      <div class="tg" id="ed-in"><span class="tag" onclick="st(this,'ed-in')">ES</span><span class="tag" onclick="st(this,'ed-in')">MES</span><span class="tag" onclick="st(this,'ed-in')">NQ</span><span class="tag" onclick="st(this,'ed-in')">MNQ</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Direction</label>
+      <div class="tg" id="ed-dr"><span class="tag" onclick="st(this,'ed-dr','g')">Long</span><span class="tag" onclick="st(this,'ed-dr','r')">Short</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Market context</label>
+      <div class="tg" id="ed-mc"><span class="tag" onclick="st(this,'ed-mc','g')">Buying continuation</span><span class="tag" onclick="st(this,'ed-mc','r')">Selling continuation</span><span class="tag" onclick="st(this,'ed-mc','a')">Chop</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Setup</label>
+      <div class="tg" id="ed-su"><span class="tag" onclick="st(this,'ed-su')">Head & Shoulders</span><span class="tag" onclick="st(this,'ed-su')">Cup & Handle</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Entry criteria <span style="font-size:10px;color:var(--hint);font-weight:400;text-transform:none">(select all that apply)</span></label>
+      <div class="tg" id="ed-en">
+        <span class="tag" onclick="mt(this)">Liquidity building algo</span><span class="tag" onclick="mt(this)">Control algo</span><span class="tag" onclick="mt(this)">Precision algo</span><span class="tag" onclick="mt(this)">Break & retest</span><span class="tag" onclick="mt(this)">Break of</span><span class="tag" onclick="mt(this)">Re-entry</span><span class="tag" onclick="mt(this)">Good fill</span><span class="tag" onclick="mt(this,'r')">Bad fill</span><span class="tag" onclick="mt(this)">Wedge</span><span class="tag" onclick="mt(this)">Micro-structure</span><span class="tag" onclick="mt(this)">5 DMA</span><span class="tag" onclick="mt(this)">20 DMA</span><span class="tag" onclick="mt(this,'a')">Early</span><span class="tag" onclick="mt(this,'r')">Chased / FOMO</span>
+      </div>
+    </div>
+    <div class="g2" style="gap:10px;margin-bottom:12px">
+      <div class="fg"><label>Stop size (pts)</label><input type="number" id="ed-ss" step="0.25"></div>
+      <div class="fg"><label># Contracts</label><input type="number" id="ed-ct" step="1" min="1"></div>
+    </div>
+    <div class="g2" style="gap:10px;margin-bottom:12px">
+      <div class="fg"><label>P&L (pts)</label><input type="number" id="ed-pl" step="0.25"></div>
+      <div class="fg"><label>R multiple</label><input type="number" id="ed-rr" step="0.25"></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Execution</label>
+      <div class="tg" id="ed-ex"><span class="tag" onclick="st(this,'ed-ex','g')">Executed to plan</span><span class="tag" onclick="st(this,'ed-ex','a')">Hesitated</span><span class="tag" onclick="st(this,'ed-ex','r')">No valid setup</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Protected?</label>
+      <div class="tg" id="ed-pr"><span class="tag" onclick="st(this,'ed-pr','g')">Yes</span><span class="tag" onclick="st(this,'ed-pr','r')">No</span><span class="tag" onclick="st(this,'ed-pr','a')">N/A</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Grade</label>
+      <div class="tg" id="ed-gr">
+        <span class="tag" onclick="st(this,'ed-gr')" style="border-color:#4c3a8a;color:#a78bfa">S</span>
+        <span class="tag" onclick="st(this,'ed-gr','g')">A</span>
+        <span class="tag" onclick="st(this,'ed-gr')" style="border-color:var(--bbr);color:var(--blue)">B</span>
+        <span class="tag" onclick="st(this,'ed-gr','a')">C</span>
+        <span class="tag" onclick="st(this,'ed-gr','r')">D</span>
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:1.5rem"><label>Notes</label><textarea id="ed-nt"></textarea></div>
+    <div class="btnrow" style="margin-top:0">
+      <button class="btn" onclick="closeEdit()">Cancel</button>
+      <button class="btn btnp" onclick="saveEdit()">Save changes</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -450,11 +513,11 @@ function copyScript(){
 // ── EXPORT CSV ────────────────────────────────────────────────────────────────
 function exportCSV(){
   if(!T.length){alert('No trades to export yet.');return;}
-  const headers=['ID','Date','Label','Instrument','Direction','Context','Setup','Entry Criteria','Entry Price','Stop Price','Contracts','P&L (pts)','R','Execution','Protected','Grade','Notes'];
+  const headers=['ID','Date','Label','Instrument','Direction','Context','Setup','Entry Criteria','Stop Size (pts)','Contracts','P&L (pts)','R','Execution','Protected','Grade','Notes'];
   const rows=T.map(t=>[
     t.id,t.date,t.lb,t.inst,t.dir,t.mc,t.setup,
     Array.isArray(t.entry)?t.entry.join('; '):(t.entry||''),
-    t.ep,t.sp,t.contracts,t.pnl,t.rr,t.exec,t.protected,t.grade,
+    t.ss,t.contracts,t.pnl,t.rr,t.exec,t.protected,t.grade,
     (t.notes||'').replace(/"/g,'""')
   ].map(v=>v!=null?`"${v}"`:'""').join(','));
   const csv=[headers.join(','),...rows].join('\n');
@@ -482,8 +545,8 @@ function importCSV(e){
         date:clean[1]||'',lb:clean[2]||'',inst:clean[3]||'',dir:clean[4]||'',
         mc:clean[5]||'',setup:clean[6]||'',
         entry:clean[7]?clean[7].split(';').map(s=>s.trim()).filter(Boolean):[],
-        ep:parseFloat(clean[8])||null,sp:parseFloat(clean[9])||null,
-        contracts:parseInt(clean[10])||null,
+        ss:parseFloat(clean[8])||null,
+        contracts:parseInt(clean[9])||null,
         pnl:parseFloat(clean[11])||null,rr:parseFloat(clean[12])||null,
         exec:clean[13]||'',protected:clean[14]||'',grade:clean[15]||'',
         notes:clean[16]||''
@@ -595,7 +658,11 @@ function prefill(i){
   const t=aiT[i];
 
   if(t.label) document.getElementById('td-lb').value=t.label;
-  if(t.pnl!=null) document.getElementById('td-pl').value=t.pnl;
+  // Parse pnl — handle formats like "+8pts", "8.25", "-4.25pts"
+  if(t.pnl!=null){
+    const pv=parseFloat(String(t.pnl).replace(/[^0-9.\-+]/g,''));
+    if(!isNaN(pv)) document.getElementById('td-pl').value=pv;
+  }
   if(t.rr!=null) document.getElementById('td-rr').value=t.rr;
   if(t.notes) document.getElementById('td-nt').value=t.notes;
   document.getElementById('td-dt').value=new Date().toLocaleDateString();
@@ -670,8 +737,7 @@ function saveT(){
     inst:gs('td-in'),dir:gs('td-dr'),
     mc:gs('td-mc'),setup:gs('td-su'),
     entry:gm('td-en'),
-    ep:parseFloat(document.getElementById('td-ep').value)||null,
-    sp:parseFloat(document.getElementById('td-sp').value)||null,
+    ss:parseFloat(document.getElementById('td-ss').value)||null,
     contracts:parseInt(document.getElementById('td-ct').value)||null,
     pnl:parseFloat(document.getElementById('td-pl').value)||null,
     rr:parseFloat(document.getElementById('td-rr').value)||null,
@@ -687,7 +753,7 @@ function saveT(){
 }
 
 function clearF(){
-  ['td-lb','td-dt','td-ep','td-sp','td-ct','td-pl','td-rr','td-nt'].forEach(id=>{document.getElementById(id).value='';});
+  ['td-lb','td-dt','td-ss','td-ct','td-pl','td-rr','td-nt'].forEach(id=>{document.getElementById(id).value='';});
   ['td-in','td-dr','td-mc','td-su','td-ex','td-pr','td-gr'].forEach(g=>{
     document.querySelectorAll(`#${g} .tag`).forEach(t=>t.className='tag');
   });
@@ -816,14 +882,14 @@ function renderReports(){
 
   const cols=[
     {key:'sel',label:''},
+    {key:'edit',label:''},
     {key:'date',label:'Date'},
     {key:'inst',label:'Instrument'},
     {key:'dir',label:'Direction'},
     {key:'mc',label:'Context'},
     {key:'setup',label:'Setup'},
     {key:'entry',label:'Entry criteria'},
-    {key:'ep',label:'Entry'},
-    {key:'sp',label:'Stop'},
+    {key:'ss',label:'Stop size'},
     {key:'contracts',label:'Contracts'},
     {key:'pnl',label:'P&L'},
     {key:'rr',label:'R'},
@@ -836,7 +902,8 @@ function renderReports(){
   el.innerHTML=`<div class="tr-wrap"><table class="tr-table">
     <thead><tr>
       <th class="cb-col"><input type="checkbox" id="sel-all" onclick="toggleAll(this)"></th>
-      ${cols.slice(1).map(c=>`<th onclick="sortBy('${c.key}')" class="${sortCol===c.key?'sorted':''}">${c.label}${sortCol===c.key?(sortDir===1?' ↑':' ↓'):''}</th>`).join('')}
+      <th style="width:50px"></th>
+      ${cols.slice(2).map(c=>`<th onclick="sortBy('${c.key}')" class="${sortCol===c.key?'sorted':''}">${c.label}${sortCol===c.key?(sortDir===1?' ↑':' ↓'):''}</th>`).join('')}
     </tr></thead>
     <tbody>
       ${data.map(t=>{
@@ -846,17 +913,17 @@ function renderReports(){
         const gradeBadge=t.grade?`<span class="badge grade-${t.grade}">${t.grade}</span>`:'—';
         const entryStr=Array.isArray(t.entry)&&t.entry.length?t.entry.join(', '):'—';
         const execColor=t.exec==='Executed to plan'?'var(--green)':t.exec==='No valid setup'?'var(--red)':'var(--amber)';
-        const sel=selectedIds.has(t.id);
+        const sel=selectedIds.has(Number(t.id));
         return `<tr class="${sel?'selected':''}" onclick="toggleRow(${t.id},event)">
           <td class="cb-col" onclick="event.stopPropagation()"><input type="checkbox" ${sel?'checked':''} onchange="toggleSel(${t.id},this)"></td>
+          <td onclick="event.stopPropagation()"><button onclick="openEdit(${t.id})" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:3px 8px;font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Edit</button></td>
           <td style="font-family:'DM Mono',monospace;white-space:nowrap">${t.date||'—'}</td>
           <td>${t.inst||'—'}</td>
           <td>${dirBadge}</td>
           <td style="font-size:11px;white-space:nowrap">${t.mc||'—'}</td>
           <td style="font-size:11px">${t.setup||'—'}</td>
           <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${entryStr}">${entryStr}</td>
-          <td style="font-family:'DM Mono',monospace">${t.ep!=null?t.ep:'—'}</td>
-          <td style="font-family:'DM Mono',monospace">${t.sp!=null?t.sp:'—'}</td>
+          <td style="font-family:'DM Mono',monospace">${t.ss!=null?t.ss+'pts':'—'}</td>
           <td style="font-family:'DM Mono',monospace;text-align:center">${t.contracts!=null?t.contracts:'—'}</td>
           <td>${pnlStr}</td>
           <td>${rrStr}</td>
@@ -877,16 +944,18 @@ function sortBy(col){
 }
 
 function toggleSel(id,cb){
+  id=Number(id);
   if(cb.checked)selectedIds.add(id);else selectedIds.delete(id);
   updateDelBar();renderReports();
 }
 function toggleRow(id,e){
+  id=Number(id);
   if(e.target.type==='checkbox')return;
   if(selectedIds.has(id))selectedIds.delete(id);else selectedIds.add(id);
   updateDelBar();renderReports();
 }
 function toggleAll(cb){
-  filteredTrades().forEach(t=>{cb.checked?selectedIds.add(t.id):selectedIds.delete(t.id);});
+  filteredTrades().forEach(t=>{cb.checked?selectedIds.add(Number(t.id)):selectedIds.delete(Number(t.id));});
   updateDelBar();renderReports();
 }
 function updateDelBar(){
@@ -899,8 +968,8 @@ function clearSel(){selectedIds.clear();updateDelBar();renderReports();}
 function deleteSel(){
   if(!selectedIds.size)return;
   if(!confirm(`Delete ${selectedIds.size} trade${selectedIds.size===1?'':'s'}? This cannot be undone.`))return;
-  selectedIds.forEach(id=>syncToSheets('delete',{id}));
-  T=T.filter(t=>!selectedIds.has(t.id));
+  selectedIds.forEach(id=>syncToSheets('delete',{id:Number(id)}));
+  T=T.filter(t=>!selectedIds.has(Number(t.id)));
   selectedIds.clear();save();renderReports();
 }
 function clearFilters(){
@@ -1017,6 +1086,79 @@ function renderAn(){
       </div>
     </div>`;
 }
+
+// ── EDIT TRADE ────────────────────────────────────────────────────────────────
+let editId=null;
+
+function openEdit(id){
+  id=Number(id);
+  const t=T.find(x=>Number(x.id)===id);
+  if(!t)return;
+  editId=id;
+
+  document.getElementById('ed-lb').value=t.lb||'';
+  document.getElementById('ed-dt').value=t.date||'';
+  document.getElementById('ed-ss').value=t.ss!=null?t.ss:'';
+  document.getElementById('ed-ct').value=t.contracts!=null?t.contracts:'';
+  document.getElementById('ed-pl').value=t.pnl!=null?t.pnl:'';
+  document.getElementById('ed-rr').value=t.rr!=null?t.rr:'';
+  document.getElementById('ed-nt').value=t.notes||'';
+
+  ['ed-in','ed-dr','ed-mc','ed-su','ed-ex','ed-pr','ed-gr'].forEach(g=>{
+    document.querySelectorAll(`#${g} .tag`).forEach(tag=>tag.className='tag');
+  });
+  document.querySelectorAll('#ed-en .tag').forEach(tag=>tag.className='tag');
+
+  const setTag=(group,val)=>{
+    if(!val)return;
+    document.querySelectorAll(`#${group} .tag`).forEach(tag=>{
+      if(tag.textContent.trim()===val)tag.click();
+    });
+  };
+  setTag('ed-in',t.inst);setTag('ed-dr',t.dir);setTag('ed-mc',t.mc);
+  setTag('ed-su',t.setup);setTag('ed-ex',t.exec);setTag('ed-pr',t.protected);setTag('ed-gr',t.grade);
+
+  const entries=Array.isArray(t.entry)?t.entry:(t.entry?[t.entry]:[]);
+  entries.forEach(e=>{
+    document.querySelectorAll('#ed-en .tag').forEach(tag=>{
+      if(tag.textContent.trim()===e)tag.classList.add('msel');
+    });
+  });
+
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function closeEdit(){
+  document.getElementById('edit-modal').classList.remove('open');
+  editId=null;
+}
+
+function saveEdit(){
+  if(!editId)return;
+  const idx=T.findIndex(x=>Number(x.id)===editId);
+  if(idx===-1)return;
+  const entries=Array.from(document.querySelectorAll('#ed-en .tag')).filter(el=>{
+    const c=el.className;return c.includes('msel')||c.includes('sg')||c.includes('sr')||c.includes('sa');
+  }).map(el=>el.textContent.trim());
+  T[idx]={...T[idx],
+    lb:document.getElementById('ed-lb').value,
+    date:document.getElementById('ed-dt').value,
+    inst:gs('ed-in'),dir:gs('ed-dr'),mc:gs('ed-mc'),setup:gs('ed-su'),
+    entry:entries,
+    ss:parseFloat(document.getElementById('ed-ss').value)||null,
+    contracts:parseInt(document.getElementById('ed-ct').value)||null,
+    pnl:parseFloat(document.getElementById('ed-pl').value)||null,
+    rr:parseFloat(document.getElementById('ed-rr').value)||null,
+    exec:gs('ed-ex'),protected:gs('ed-pr'),grade:gs('ed-gr'),
+    notes:document.getElementById('ed-nt').value
+  };
+  save();syncToSheets('save',{trade:T[idx]});
+  closeEdit();renderReports();
+}
+
+document.getElementById('edit-modal').addEventListener('click',function(e){
+  if(e.target===this)closeEdit();
+});
 
 updateFooter();
 renderOv();
