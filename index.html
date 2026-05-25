@@ -641,7 +641,8 @@ function processImg(file){
     imgB64=ev.target.result.split(',')[1];
     const p=document.getElementById('imgprev');
     p.src=ev.target.result;p.style.display='block';
-    pz.style.display='none';
+    const zone=document.getElementById('pastezone');
+    if(zone)zone.style.display='none';
     analyzeChart(imgB64);
   };r.readAsDataURL(file);
 }
