@@ -290,8 +290,14 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
   <div class="del-bar" id="del-bar">
     <span id="del-count">0 selected</span>
     <button id="del-edit-btn" class="btn" onclick="editSelected()" style="padding:6px 14px;font-size:12px;background:var(--adim);border-color:var(--acc);color:#d0ccff;display:none">Edit selected</button>
-    <button class="btn danger" onclick="deleteSel()" style="padding:6px 14px;font-size:12px">Delete selected</button>
+    <button class="btn danger" onclick="showDelConfirm()" style="padding:6px 14px;font-size:12px" id="del-btn">Delete selected</button>
     <button class="btn" onclick="clearSel()" style="padding:6px 14px;font-size:12px">Cancel</button>
+  </div>
+  <!-- Inline delete confirmation — no browser dialog needed -->
+  <div id="del-confirm" style="display:none;align-items:center;gap:10px;background:#2a0f0f;border:1px solid #4a1e1e;border-radius:8px;padding:10px 16px;margin-bottom:1rem;font-size:13px;color:#f05a5a;">
+    <span id="del-confirm-txt"></span>
+    <button class="btn danger" onclick="confirmDelete()" style="padding:5px 14px;font-size:12px">Yes, delete</button>
+    <button class="btn" onclick="cancelDelete()" style="padding:5px 14px;font-size:12px">No, keep</button>
   </div>
 
   <div id="reports-content"></div>
@@ -1014,7 +1020,9 @@ function toggleAll(cb){
 function updateDelBar(){
   const n=selectedIds.size;
   const bar=document.getElementById('del-bar');
+  const confirm=document.getElementById('del-confirm');
   if(bar) bar.style.display=n>0?'flex':'none';
+  if(confirm) confirm.style.display='none';
   const cnt=document.getElementById('del-count');
   if(cnt) cnt.textContent=n+' selected';
   const editBtn=document.getElementById('del-edit-btn');
@@ -1031,17 +1039,27 @@ function clearSel(){
   if(selAll) selAll.checked=false;
   updateDelBar();
 }
-function deleteSel(){
+function showDelConfirm(){
   const n=selectedIds.size;
-  if(!n) return;
+  if(!n)return;
+  document.getElementById('del-confirm-txt').textContent='Delete '+n+' trade'+(n===1?'':'s')+'? Cannot be undone.';
+  document.getElementById('del-confirm').style.display='flex';
+  document.getElementById('del-bar').style.display='none';
+}
+function cancelDelete(){
+  document.getElementById('del-confirm').style.display='none';
+  document.getElementById('del-bar').style.display=selectedIds.size>0?'flex':'none';
+}
+function confirmDelete(){
   const ids=[...selectedIds].map(Number);
-  if(!window.confirm('Delete '+n+' trade'+(n===1?'':'s')+'? This cannot be undone.')) return;
   T=T.filter(t=>!ids.includes(Number(t.id)));
   ids.forEach(id=>syncToSheets('delete',{id}));
   selectedIds.clear();
   save();
+  document.getElementById('del-confirm').style.display='none';
   renderReports();
 }
+function deleteSel(){showDelConfirm();}
 function editSelected(){
   if(!selectedIds.size)return;
   // if single selection open edit modal, if multiple open bulk edit
