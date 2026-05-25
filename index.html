@@ -11,9 +11,9 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 html{font-size:14px;}
 body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-height:1.6;}
-.shell{display:flex;min-height:100vh;}
-.sidebar{width:220px;min-width:220px;background:var(--surface);border-right:1px solid var(--bs);padding:2rem 0;position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;}
-.main{margin-left:220px;padding:2rem 2.5rem;max-width:1200px;}
+.shell{display:flex;align-items:flex-start;}
+.sidebar{width:220px;min-width:220px;background:var(--surface);border-right:1px solid var(--bs);padding:2rem 0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;flex-shrink:0;}
+.main{flex:1;padding:2rem 2.5rem;max-width:1200px;min-width:0;}
 .logo{padding:0 1.5rem 2rem;font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--acc);}
 .logo span{display:block;font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0.06em;margin-top:2px;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 1.5rem;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-left:2px solid transparent;transition:all 0.15s;user-select:none;}
@@ -137,7 +137,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     <div class="nav-item" onclick="go('analytics',this)"><span class="dot"></span>Edge analytics</div>
     <div class="nav-item" onclick="go('settings',this)"><span class="dot"></span>Settings</div>
   </nav>
-  <div class="sfooter" id="sf">Paper account<br>0 trades logged</div>
+  <div class="sfooter" id="sf">0 trades logged</div>
 </aside>
 
 <main class="main">
@@ -182,7 +182,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
         <div class="fg" style="margin-bottom:12px"><label>Instrument</label>
           <div class="tg" id="td-in">
             <span class="tag" onclick="st(this,'td-in')">ES</span>
-            <span class="tag" onclick="st(this,'td-in')">MES</span>
+            <span class="tag sel" onclick="st(this,'td-in')">MES</span>
             <span class="tag" onclick="st(this,'td-in')">NQ</span>
             <span class="tag" onclick="st(this,'td-in')">MNQ</span>
           </div>
@@ -544,7 +544,7 @@ function go(id,el){
 }
 
 function updateFooter(){
-  document.getElementById('sf').innerHTML=`Paper account<br>${T.length} trade${T.length===1?'':'s'} logged`;
+  document.getElementById('sf').innerHTML=`${T.length} trade${T.length===1?'':'s'} logged`;
 }
 
 function save(){
@@ -863,6 +863,8 @@ function clearF(){
   ['td-in','td-dr','td-mc','td-su','td-ex','td-pr','td-gr'].forEach(g=>{
     document.querySelectorAll(`#${g} .tag`).forEach(t=>t.className='tag');
   });
+  // re-select MES as default instrument
+  document.querySelector('#td-in .tag:nth-child(2)').className='tag sel';
   document.querySelectorAll('#td-en .tag').forEach(t=>t.className='tag');
   document.querySelectorAll('.aicard').forEach(c=>c.classList.remove('sel'));
   imgB64=null;
@@ -892,7 +894,7 @@ function renderOv(){
   const eqPts=sorted.map(t=>{cum+=t.pnl;return{label:t.lb||t.date,cum:parseFloat(cum.toFixed(2))};});
 
   document.getElementById('ov').innerHTML=`
-    <div style="margin-bottom:2rem"><div class="ptitle">Overview</div><div class="psub">Paper account — live as you log</div></div>
+    <div style="margin-bottom:2rem"><div class="ptitle">Overview</div><div class="psub">Live as you log</div></div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:1.75rem;max-width:660px">
       <div class="metric" style="padding:1.5rem 1.75rem">
