@@ -13,7 +13,7 @@ html{font-size:14px;}
 body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-height:1.6;}
 .shell{display:flex;align-items:flex-start;}
 .sidebar{width:220px;min-width:220px;background:var(--surface);border-right:1px solid var(--bs);padding:2rem 0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;flex-shrink:0;}
-.main{flex:1;padding:2rem 2.5rem;max-width:1200px;min-width:0;}
+.main{flex:1;padding:2rem 2.5rem;min-width:0;}
 .logo{padding:0 1.5rem 2rem;font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--acc);}
 .logo span{display:block;font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0.06em;margin-top:2px;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 1.5rem;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-left:2px solid transparent;transition:all 0.15s;user-select:none;}
@@ -177,7 +177,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
         <div class="ctitle">Trade details</div>
         <div class="g2" style="gap:10px;margin-bottom:12px">
           <div class="fg"><label>Label</label><input type="text" id="td-lb" placeholder="T1"></div>
-          <div class="fg"><label>Date</label><input type="text" id="td-dt" placeholder="05/23/2026"></div>
+          <div class="fg"><label>Date</label><input type="date" id="td-dt"></div>
         </div>
         <div class="fg" style="margin-bottom:12px"><label>Instrument</label>
           <div class="tg" id="td-in">
@@ -474,7 +474,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     <div class="modal-title">Edit trade</div>
     <div class="g2" style="gap:10px;margin-bottom:12px">
       <div class="fg"><label>Label</label><input type="text" id="ed-lb"></div>
-      <div class="fg"><label>Date</label><input type="text" id="ed-dt"></div>
+      <div class="fg"><label>Date</label><input type="date" id="ed-dt"></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Instrument</label>
       <div class="tg" id="ed-in"><span class="tag" onclick="st(this,'ed-in')">ES</span><span class="tag" onclick="st(this,'ed-in')">MES</span><span class="tag" onclick="st(this,'ed-in')">NQ</span><span class="tag" onclick="st(this,'ed-in')">MNQ</span></div>
@@ -771,7 +771,7 @@ function prefill(i){
   }
   if(t.rr!=null) document.getElementById('td-rr').value=t.rr;
   if(t.notes) document.getElementById('td-nt').value=t.notes;
-  document.getElementById('td-dt').value=new Date().toLocaleDateString();
+  document.getElementById('td-dt').value=new Date().toISOString().slice(0,10);
 
   if(t.direction) setTagByText('td-dr',t.direction);
   if(t.mc) setTagByText('td-mc',t.mc);
@@ -839,7 +839,7 @@ function saveT(){
   const t={
     id:Date.now(),
     lb:document.getElementById('td-lb').value,
-    date:document.getElementById('td-dt').value||new Date().toLocaleDateString(),
+    date:document.getElementById('td-dt').value||new Date().toISOString().slice(0,10),
     inst:gs('td-in'),dir:gs('td-dr'),
     mc:gs('td-mc'),setup:gs('td-su'),
     entry:gm('td-en'),
@@ -880,23 +880,80 @@ function renderOv(){
   const losses=withPnl.filter(t=>t.pnl<=0);
   const wr=withPnl.length?wins.length/withPnl.length:0;
   const wrPct=Math.round(wr*100);
-
   const avgWin=wins.length?wins.reduce((a,t)=>a+t.pnl,0)/wins.length:0;
   const avgLoss=losses.length?Math.abs(losses.reduce((a,t)=>a+t.pnl,0)/losses.length):0;
   const expectancy=parseFloat((wr*avgWin-(1-wr)*avgLoss).toFixed(2));
-
   const rrVals=T.filter(t=>t.rr!=null).map(t=>t.rr);
   const avgRR=rrVals.length?parseFloat((rrVals.reduce((a,b)=>a+b,0)/rrVals.length).toFixed(2)):null;
-
   const totalPts=withPnl.reduce((a,t)=>a+t.pnl,0);
   const sorted=[...withPnl].sort((a,b)=>a.id-b.id);
   let cum=0;
   const eqPts=sorted.map(t=>{cum+=t.pnl;return{label:t.lb||t.date,cum:parseFloat(cum.toFixed(2))};});
 
+  // Build daily P&L map for calendar
+  const dayMap={};
+  T.forEach(t=>{
+    if(!t.date)return;
+    const d=t.date;
+    if(!dayMap[d])dayMap[d]={pnl:0,wins:0,total:0};
+    if(t.pnl!=null)dayMap[d].pnl=parseFloat((dayMap[d].pnl+t.pnl).toFixed(2));
+    dayMap[d].total++;
+    if(t.pnl!=null&&t.pnl>0)dayMap[d].wins++;
+  });
+
+  // Get months from trades + current month
+  const monthSet=new Set();
+  T.forEach(t=>{
+    if(t.date){const d=new Date(t.date);if(!isNaN(d))monthSet.add(d.getFullYear()+'-'+(d.getMonth()+1));}
+  });
+  const now=new Date();
+  monthSet.add(now.getFullYear()+'-'+(now.getMonth()+1));
+  const months=[...monthSet].sort().slice(-3);
+
+  function buildCal(yearMonth){
+    const [yr,mo]=yearMonth.split('-').map(Number);
+    const firstDay=new Date(yr,mo-1,1);
+    const daysInMonth=new Date(yr,mo,0).getDate();
+    let startDow=(firstDay.getDay()+6)%7;
+    const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    let html=`<div style="margin-bottom:1.5rem">
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px">${monthNames[mo-1]} ${yr}</div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">`;
+    ['M','T','W','T','F','S','S'].forEach(d=>{
+      html+=`<div style="font-size:10px;font-weight:600;color:var(--muted);text-align:center;padding:4px 0">${d}</div>`;
+    });
+    for(let i=0;i<startDow;i++)html+=`<div></div>`;
+    for(let d=1;d<=daysInMonth;d++){
+      const isoStr=yr+'-'+(mo<10?'0'+mo:mo)+'-'+(d<10?'0'+d:d);
+      const day=dayMap[isoStr];
+      const dow=(startDow+d-1)%7;
+      const isWeekend=dow>=5;
+      if(day){
+        const pos=day.pnl>=0;
+        const bg=pos?'var(--gbg)':'var(--rbg)';
+        const border=pos?'var(--gbr)':'var(--rbr)';
+        const col=pos?'var(--green)':'var(--red)';
+        const pnlStr=(day.pnl>0?'+':'')+day.pnl+'pts';
+        const wrStr=day.total>0?day.wins+'/'+day.total:'';
+        html+=`<div style="background:${bg};border:1px solid ${border};border-radius:8px;padding:5px 4px;text-align:center;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+          <div style="font-weight:700;font-size:13px;color:${col}">${d}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:${col}">${pnlStr}</div>
+          <div style="font-size:9px;color:${col};opacity:0.8">${wrStr}</div>
+        </div>`;
+      } else {
+        html+=`<div style="background:${isWeekend?'var(--surface)':'transparent'};border:1px solid ${isWeekend?'var(--bs)':'transparent'};border-radius:8px;padding:5px 4px;text-align:center;min-height:58px;display:flex;align-items:center;justify-content:center">
+          <div style="font-size:13px;color:var(--hint);opacity:${isWeekend?'0.4':'0.2'}">${d}</div>
+        </div>`;
+      }
+    }
+    html+=`</div></div>`;
+    return html;
+  }
+
   document.getElementById('ov').innerHTML=`
     <div style="margin-bottom:2rem"><div class="ptitle">Overview</div><div class="psub">Live as you log</div></div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:1.75rem;max-width:660px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:1.5rem">
       <div class="metric" style="padding:1.5rem 1.75rem">
         <div class="mlabel" style="margin-bottom:10px">Win rate</div>
         <div class="mval ${withPnl.length?(wrPct>=50?'g':'r'):''}" style="font-size:48px;letter-spacing:-0.03em">${withPnl.length?wrPct+'%':'—'}</div>
@@ -914,37 +971,53 @@ function renderOv(){
       </div>
     </div>
 
-    ${eqPts.length>1?`
-    <div class="card" style="margin-bottom:1rem">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem">
-        <div><div class="ctitle" style="margin-bottom:4px">Equity curve</div><div style="font-size:11px;color:var(--hint)">Cumulative P&L · pts</div></div>
-        <div style="text-align:right"><div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:${totalPts>=0?'var(--green)':'var(--red)'}">${totalPts>=0?'+':''}${totalPts.toFixed(2)}pts</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+      <div>
+        ${eqPts.length>1?`
+        <div class="card" style="height:100%">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem">
+            <div><div class="ctitle" style="margin-bottom:4px">Equity curve</div><div style="font-size:11px;color:var(--hint)">Cumulative P&L · pts</div></div>
+            <div style="text-align:right"><div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:${totalPts>=0?'var(--green)':'var(--red)'}">${totalPts>=0?'+':''}${totalPts.toFixed(2)}pts</div></div>
+          </div>
+          <div style="position:relative;height:200px"><canvas id="eqc" role="img" aria-label="Cumulative P&L curve"></canvas></div>
+        </div>`:`
+        <div class="card">
+          <div class="ctitle">Equity curve</div>
+          <div class="empty">Log at least 2 trades to see the curve.</div>
+        </div>`}
       </div>
-      <div style="position:relative;height:200px"><canvas id="eqc" role="img" aria-label="Cumulative P&L curve"></canvas></div>
-    </div>`:`
-    <div class="card" style="margin-bottom:1rem">
-      <div class="ctitle">Equity curve</div>
-      <div class="empty">Builds as you log trades with P&L.<br>Log at least 2 trades to see the curve.</div>
-    </div>`}
+      <div>
+        ${T.length>=3?`<div class="g2" style="margin-bottom:0">
+          <div class="card">
+            <div class="ctitle">By execution</div>
+            ${['Executed to plan','Hesitated','No valid setup'].map(k=>{
+              const g=T.filter(t=>t.exec===k&&t.pnl!=null);const gw=g.filter(t=>t.pnl>0);const wr2=g.length?Math.round(gw.length/g.length*100):0;
+              const col=k==='Executed to plan'?'#2dd4a0':k==='Hesitated'?'#f0b84a':'#f05a5a';
+              return '<div class="arow"><span class="alabel">'+k+'</span><div class="prog"><div class="prog-fill" style="width:'+wr2+'%;background:'+col+'"></div></div><span class="apct" style="color:'+col+'">'+wr2+'%</span><span class="acnt">'+g.length+'t</span></div>';
+            }).join('')}
+          </div>
+          <div class="card">
+            <div class="ctitle">By market context</div>
+            ${['Buying continuation','Selling continuation','Chop'].map(k=>{
+              const g=T.filter(t=>t.mc===k&&t.pnl!=null);const gw=g.filter(t=>t.pnl>0);const wr2=g.length?Math.round(gw.length/g.length*100):0;
+              const col=wr2>=60?'#2dd4a0':wr2>=40?'#f0b84a':'#f05a5a';
+              return '<div class="arow"><span class="alabel">'+k+'</span><div class="prog"><div class="prog-fill" style="width:'+wr2+'%;background:'+col+'"></div></div><span class="apct" style="color:'+col+'">'+wr2+'%</span><span class="acnt">'+g.length+'t</span></div>';
+            }).join('')}
+          </div>
+        </div>`:'<div class="card"><div class="empty">Log 3+ trades to see breakdown.</div></div>'}
+      </div>
+    </div>
 
-    ${T.length>=3?`<div class="g2">
-      <div class="card">
-        <div class="ctitle">By execution</div>
-        ${['Executed to plan','Hesitated','No valid setup'].map(k=>{
-          const g=T.filter(t=>t.exec===k&&t.pnl!=null);const gw=g.filter(t=>t.pnl>0);const wr2=g.length?Math.round(gw.length/g.length*100):0;
-          const col=k==='Executed to plan'?'#2dd4a0':k==='Hesitated'?'#f0b84a':'#f05a5a';
-          return `<div class="arow"><span class="alabel">${k}</span><div class="prog"><div class="prog-fill" style="width:${wr2}%;background:${col}"></div></div><span class="apct" style="color:${col}">${wr2}%</span><span class="acnt">${g.length}t</span></div>`;
-        }).join('')}
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+        <div class="ctitle" style="margin-bottom:0">P&L Calendar</div>
+        <div style="display:flex;gap:12px;font-size:11px;color:var(--muted)">
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--gbg);border:1px solid var(--gbr);margin-right:4px"></span>Win</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--rbg);border:1px solid var(--rbr);margin-right:4px"></span>Loss</span>
+        </div>
       </div>
-      <div class="card">
-        <div class="ctitle">By market context</div>
-        ${['Buying continuation','Selling continuation','Chop'].map(k=>{
-          const g=T.filter(t=>t.mc===k&&t.pnl!=null);const gw=g.filter(t=>t.pnl>0);const wr2=g.length?Math.round(gw.length/g.length*100):0;
-          const col=wr2>=60?'#2dd4a0':wr2>=40?'#f0b84a':'#f05a5a';
-          return `<div class="arow"><span class="alabel">${k}</span><div class="prog"><div class="prog-fill" style="width:${wr2}%;background:${col}"></div></div><span class="apct" style="color:${col}">${wr2}%</span><span class="acnt">${g.length}t</span></div>`;
-        }).join('')}
-      </div>
-    </div>`:''}`;
+      ${T.length?'<div style="display:grid;grid-template-columns:repeat('+Math.min(months.length,3)+',1fr);gap:1.5rem">'+months.map(m=>buildCal(m)).join('')+'</div>':'<div class="empty">Calendar populates as you log trades.</div>'}
+    </div>`;
 
   if(eqPts.length>1){
     const load=()=>{
@@ -955,7 +1028,6 @@ function renderOv(){
     else setTimeout(load,50);
   }
 }
-
 // ── TRADE REPORTS ─────────────────────────────────────────────────────────────
 function getChecked(panelId){
   return Array.from(document.querySelectorAll('#'+panelId+' input[type=checkbox]:checked')).map(c=>c.value);
