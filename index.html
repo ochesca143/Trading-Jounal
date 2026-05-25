@@ -802,21 +802,13 @@ function setMultiTagByText(group,text){
 
 // ── TAG HELPERS ───────────────────────────────────────────────────────────────
 function st(el,group,color){
-  document.querySelectorAll(`#${group} .tag`).forEach(t=>{
-    // preserve original style for grade tags
-    const orig=t.getAttribute('data-orig')||'';
-    t.className='tag'+(orig?' '+orig:'');
-    if(orig) t.style.cssText=t.getAttribute('data-origstyle')||'';
+  // clear all tags in group
+  document.querySelectorAll('#'+group+' .tag').forEach(t=>{
+    t.classList.remove('sel','sg','sr','sa');
   });
-  if(!el.getAttribute('data-orig')){
-    el.setAttribute('data-orig',color?'s'+color:'');
-    el.setAttribute('data-origstyle',el.style.cssText||'');
-  }
-  if(color){el.className='tag s'+color;}
-  else{
-    // keep inline style for grade tags (S,B)
-    el.classList.add('sel');
-  }
+  // set selected tag
+  if(color) el.classList.add('s'+color);
+  else el.classList.add('sel');
 }
 function mt(el,color){
   const active=el.classList.contains('msel')||el.classList.contains('sg')||el.classList.contains('sr')||el.classList.contains('sa');
@@ -961,8 +953,8 @@ function renderOv(){
       </div>
       <div class="metric" style="padding:1.5rem 1.75rem">
         <div class="mlabel" style="margin-bottom:10px">Expectancy</div>
-        <div class="mval ${withPnl.length?(expectancy>0?'g':'r'):''}" style="font-size:48px;letter-spacing:-0.03em">${withPnl.length?(expectancy>0?'+':'')+expectancy:'—'}</div>
-        <div class="msub" style="margin-top:8px">${withPnl.length?'pts per trade avg':''}</div>
+        <div class="mval ${withPnl.length?(expectancy>0?'g':'r'):''}" style="font-size:48px;letter-spacing:-0.03em">${withPnl.length?(expectancy>0?'+':'')+expectancy+'pts':'—'}</div>
+        <div class="msub" style="margin-top:8px">${withPnl.length?'per trade avg':''}</div>
       </div>
       <div class="metric" style="padding:1.5rem 1.75rem">
         <div class="mlabel" style="margin-bottom:10px">Avg R:R</div>
