@@ -289,6 +289,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
 
   <div class="del-bar" id="del-bar">
     <span id="del-count">0 selected</span>
+    <button id="del-edit-btn" class="btn" onclick="editSelected()" style="padding:6px 14px;font-size:12px;display:none;background:var(--adim);border-color:var(--acc);color:#d0ccff">Edit selected</button>
     <button class="btn danger" onclick="deleteSel()" style="padding:6px 14px;font-size:12px">Delete selected</button>
     <button class="btn" onclick="clearSel()" style="padding:6px 14px;font-size:12px">Cancel</button>
   </div>
@@ -882,7 +883,6 @@ function renderReports(){
 
   const cols=[
     {key:'sel',label:''},
-    {key:'edit',label:''},
     {key:'date',label:'Date'},
     {key:'inst',label:'Instrument'},
     {key:'dir',label:'Direction'},
@@ -902,8 +902,7 @@ function renderReports(){
   el.innerHTML=`<div class="tr-wrap"><table class="tr-table">
     <thead><tr>
       <th class="cb-col"><input type="checkbox" id="sel-all" onclick="toggleAll(this)"></th>
-      <th style="width:50px"></th>
-      ${cols.slice(2).map(c=>`<th onclick="sortBy('${c.key}')" class="${sortCol===c.key?'sorted':''}">${c.label}${sortCol===c.key?(sortDir===1?' ↑':' ↓'):''}</th>`).join('')}
+      ${cols.slice(1).map(c=>`<th onclick="sortBy('${c.key}')" class="${sortCol===c.key?'sorted':''}">${c.label}${sortCol===c.key?(sortDir===1?' ↑':' ↓'):''}</th>`).join('')}
     </tr></thead>
     <tbody>
       ${data.map(t=>{
@@ -916,7 +915,6 @@ function renderReports(){
         const sel=selectedIds.has(Number(t.id));
         return `<tr class="${sel?'selected':''}" onclick="toggleRow(${t.id},event)">
           <td class="cb-col" onclick="event.stopPropagation()"><input type="checkbox" ${sel?'checked':''} onchange="toggleSel(${t.id},this)"></td>
-          <td onclick="event.stopPropagation()"><button onclick="openEdit(${t.id})" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:3px 8px;font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Edit</button></td>
           <td style="font-family:'DM Mono',monospace;white-space:nowrap">${t.date||'—'}</td>
           <td>${t.inst||'—'}</td>
           <td>${dirBadge}</td>
@@ -946,31 +944,72 @@ function sortBy(col){
 function toggleSel(id,cb){
   id=Number(id);
   if(cb.checked)selectedIds.add(id);else selectedIds.delete(id);
-  updateDelBar();renderReports();
+  updateDelBar();
+  // update row highlight without full re-render
+  const row=cb.closest('tr');
+  if(row) row.className=cb.checked?'selected':'';
 }
 function toggleRow(id,e){
   id=Number(id);
-  if(e.target.type==='checkbox')return;
-  if(selectedIds.has(id))selectedIds.delete(id);else selectedIds.add(id);
-  updateDelBar();renderReports();
+  if(e.target.type==='checkbox'||e.target.tagName==='BUTTON')return;
+  const isSelected=selectedIds.has(id);
+  if(isSelected)selectedIds.delete(id);else selectedIds.add(id);
+  updateDelBar();
+  const row=e.currentTarget;
+  if(row) row.className=isSelected?'':'selected';
+  // sync checkbox state
+  const cb=row?.querySelector('input[type=checkbox]');
+  if(cb) cb.checked=!isSelected;
 }
 function toggleAll(cb){
-  filteredTrades().forEach(t=>{cb.checked?selectedIds.add(Number(t.id)):selectedIds.delete(Number(t.id));});
-  updateDelBar();renderReports();
+  filteredTrades().forEach(t=>{
+    cb.checked?selectedIds.add(Number(t.id)):selectedIds.delete(Number(t.id));
+  });
+  // update all row highlights
+  document.querySelectorAll('.tr-table tbody tr').forEach(row=>{
+    const rowCb=row.querySelector('input[type=checkbox]');
+    if(rowCb){rowCb.checked=cb.checked;row.className=cb.checked?'selected':'';}
+  });
+  updateDelBar();
 }
 function updateDelBar(){
   const bar=document.getElementById('del-bar');
   const n=selectedIds.size;
   bar.style.display=n>0?'flex':'none';
   document.getElementById('del-count').textContent=n+' selected';
+  // show/hide edit button in bar
+  const editBtn=document.getElementById('del-edit-btn');
+  if(editBtn) editBtn.style.display=n>0?'inline-flex':'none';
 }
-function clearSel(){selectedIds.clear();updateDelBar();renderReports();}
+function clearSel(){
+  selectedIds.clear();
+  document.querySelectorAll('.tr-table tbody tr').forEach(row=>{
+    row.className='';
+    const cb=row.querySelector('input[type=checkbox]');
+    if(cb)cb.checked=false;
+  });
+  const selAll=document.getElementById('sel-all');
+  if(selAll)selAll.checked=false;
+  updateDelBar();
+}
 function deleteSel(){
   if(!selectedIds.size)return;
-  if(!confirm(`Delete ${selectedIds.size} trade${selectedIds.size===1?'':'s'}? This cannot be undone.`))return;
+  const n=selectedIds.size;
+  if(!confirm('Delete '+n+' trade'+(n===1?'':'s')+'? This cannot be undone.'))return;
   selectedIds.forEach(id=>syncToSheets('delete',{id:Number(id)}));
   T=T.filter(t=>!selectedIds.has(Number(t.id)));
-  selectedIds.clear();save();renderReports();
+  selectedIds.clear();
+  save();
+  renderReports();
+}
+function editSelected(){
+  if(!selectedIds.size)return;
+  // if single selection open edit modal, if multiple open bulk edit
+  if(selectedIds.size===1){
+    openEdit([...selectedIds][0]);
+  } else {
+    openBulkEdit();
+  }
 }
 function clearFilters(){
   ['rf-from','rf-to'].forEach(id=>{document.getElementById(id).value='';});
@@ -1160,8 +1199,70 @@ document.getElementById('edit-modal').addEventListener('click',function(e){
   if(e.target===this)closeEdit();
 });
 
+// ── BULK EDIT ─────────────────────────────────────────────────────────────────
+function openBulkEdit(){
+  document.getElementById('bulk-count').textContent=selectedIds.size+' trades';
+  ['bed-mc','bed-su','bed-ex','bed-pr','bed-gr'].forEach(g=>{
+    document.querySelectorAll('#'+g+' .tag').forEach(t=>t.className='tag');
+  });
+  document.getElementById('bulk-modal').classList.add('open');
+}
+function closeBulkEdit(){
+  document.getElementById('bulk-modal').classList.remove('open');
+}
+function saveBulkEdit(){
+  const mc=gs('bed-mc'),su=gs('bed-su'),ex=gs('bed-ex'),pr=gs('bed-pr'),gr=gs('bed-gr');
+  T.forEach((t,i)=>{
+    if(!selectedIds.has(Number(t.id)))return;
+    if(mc)T[i].mc=mc;
+    if(su)T[i].setup=su;
+    if(ex)T[i].exec=ex;
+    if(pr)T[i].protected=pr;
+    if(gr)T[i].grade=gr;
+    syncToSheets('save',{trade:T[i]});
+  });
+  save();closeBulkEdit();clearSel();renderReports();
+}
+document.getElementById('bulk-modal').addEventListener('click',function(e){
+  if(e.target===this)closeBulkEdit();
+});
+
 updateFooter();
 renderOv();
 </script>
+<!-- BULK EDIT MODAL -->
+<div class="modal-overlay" id="bulk-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeBulkEdit()">✕</button>
+    <div class="modal-title">Bulk edit — <span id="bulk-count" style="color:var(--acc)"></span></div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:1.5rem">Only fields you select will be updated. Unselected fields stay as-is on each trade.</p>
+    <div class="fg" style="margin-bottom:12px"><label>Market context</label>
+      <div class="tg" id="bed-mc"><span class="tag" onclick="st(this,'bed-mc','g')">Buying continuation</span><span class="tag" onclick="st(this,'bed-mc','r')">Selling continuation</span><span class="tag" onclick="st(this,'bed-mc','a')">Chop</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Setup</label>
+      <div class="tg" id="bed-su"><span class="tag" onclick="st(this,'bed-su')">Head & Shoulders</span><span class="tag" onclick="st(this,'bed-su')">Cup & Handle</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Execution</label>
+      <div class="tg" id="bed-ex"><span class="tag" onclick="st(this,'bed-ex','g')">Executed to plan</span><span class="tag" onclick="st(this,'bed-ex','a')">Hesitated</span><span class="tag" onclick="st(this,'bed-ex','r')">No valid setup</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Protected?</label>
+      <div class="tg" id="bed-pr"><span class="tag" onclick="st(this,'bed-pr','g')">Yes</span><span class="tag" onclick="st(this,'bed-pr','r')">No</span><span class="tag" onclick="st(this,'bed-pr','a')">N/A</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:1.5rem"><label>Grade</label>
+      <div class="tg" id="bed-gr">
+        <span class="tag" onclick="st(this,'bed-gr')" style="border-color:#4c3a8a;color:#a78bfa">S</span>
+        <span class="tag" onclick="st(this,'bed-gr','g')">A</span>
+        <span class="tag" onclick="st(this,'bed-gr')" style="border-color:var(--bbr);color:var(--blue)">B</span>
+        <span class="tag" onclick="st(this,'bed-gr','a')">C</span>
+        <span class="tag" onclick="st(this,'bed-gr','r')">D</span>
+      </div>
+    </div>
+    <div class="btnrow" style="margin-top:0">
+      <button class="btn" onclick="closeBulkEdit()">Cancel</button>
+      <button class="btn btnp" onclick="saveBulkEdit()">Apply to selected</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
