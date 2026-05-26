@@ -178,6 +178,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
         <div class="g2" style="gap:10px;margin-bottom:12px">
           <div class="fg"><label>Label</label><input type="text" id="td-lb" placeholder="T1"></div>
           <div class="fg"><label>Date</label><input type="text" id="td-dt" placeholder="05/23/2026"></div>
+          <div class="fg"><label>Entry time (ET)</label><input type="time" id="td-tm"></div>
         </div>
         <div class="fg" style="margin-bottom:12px"><label>Instrument</label>
           <div class="tg" id="td-in">
@@ -511,6 +512,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     <div class="g2" style="gap:10px;margin-bottom:12px">
       <div class="fg"><label>Label</label><input type="text" id="ed-lb"></div>
       <div class="fg"><label>Date</label><input type="text" id="ed-dt" placeholder="05/23/2026"></div>
+      <div class="fg"><label>Entry time (ET)</label><input type="time" id="ed-tm"></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Instrument</label>
       <div class="tg" id="ed-in"><span class="tag" onclick="st(this,'ed-in')">ES</span><span class="tag" onclick="st(this,'ed-in')">MES</span><span class="tag" onclick="st(this,'ed-in')">NQ</span><span class="tag" onclick="st(this,'ed-in')">MNQ</span></div>
@@ -667,9 +669,9 @@ function copyScript(){
 // ── EXPORT CSV ────────────────────────────────────────────────────────────────
 function exportCSV(){
   if(!T.length){alert('No trades to export yet.');return;}
-  const headers=['ID','Date','Label','Account','Session','Instrument','Direction','Context','Setup','Entry Criteria','Stop Size (pts)','Contracts','P&L ($)','R','Execution','Protected','Grade','Notes'];
+  const headers=['ID','Date','Time','Label','Account','Session','Instrument','Direction','Context','Setup','Entry Criteria','Stop Size (pts)','Contracts','P&L ($)','R','Execution','Protected','Grade','Notes'];
   const rows=T.map(t=>[
-    t.id,t.date,t.lb,t.account,t.session,t.inst,t.dir,t.mc,t.setup,
+    t.id,t.date,t.time,t.lb,t.account,t.session,t.inst,t.dir,t.mc,t.setup,
     Array.isArray(t.entry)?t.entry.join('; '):(t.entry||''),
     t.ss,t.contracts,t.pnl,t.rr,t.exec,t.protected,t.grade,
     (t.notes||'').replace(/"/g,'""')
@@ -821,6 +823,7 @@ function prefill(i){
   if(t.rr!=null) document.getElementById('td-rr').value=t.rr;
   if(t.notes) document.getElementById('td-nt').value=t.notes;
   const _nd=new Date();document.getElementById('td-dt').value=(_nd.getMonth()+1).toString().padStart(2,'0')+'/'+_nd.getDate().toString().padStart(2,'0')+'/'+_nd.getFullYear();
+  document.getElementById('td-tm').value=_nd.getHours().toString().padStart(2,'0')+':'+_nd.getMinutes().toString().padStart(2,'0');
 
   if(t.direction) setTagByText('td-dr',t.direction);
   if(t.mc) setTagByText('td-mc',t.mc);
@@ -880,6 +883,7 @@ function saveT(){
   const t={
     id:Date.now(),
     lb:document.getElementById('td-lb').value,
+    time:document.getElementById('td-tm').value||'',
     date:(()=>{const _d=document.getElementById('td-dt').value;if(_d)return _d;const _nd=new Date();return(_nd.getMonth()+1).toString().padStart(2,'0')+'/'+_nd.getDate().toString().padStart(2,'0')+'/'+_nd.getFullYear();})(),
     inst:gs('td-in'),account:(document.getElementById('td-ac').value.trim()),session:gs('td-se'),dir:gs('td-dr'),
     mc:gs('td-mc'),setup:gs('td-su'),
@@ -901,7 +905,7 @@ function saveT(){
 }
 
 function clearF(){
-  ['td-lb','td-dt','td-ss','td-ct','td-pl','td-rr','td-nt'].forEach(id=>{document.getElementById(id).value='';});
+  ['td-lb','td-dt','td-tm','td-ss','td-ct','td-pl','td-rr','td-nt'].forEach(id=>{document.getElementById(id).value='';});
   ['td-in','td-se','td-dr','td-mc','td-su','td-ex','td-pr','td-gr'].forEach(g=>{
     document.querySelectorAll(`#${g} .tag`).forEach(t=>t.className='tag');
   });
@@ -1152,6 +1156,7 @@ function renderReports(){
   const cols=[
     {key:'sel',label:''},
     {key:'date',label:'Date'},
+    {key:'time',label:'Time'},
     {key:'account',label:'Account'},
     {key:'session',label:'Session'},
     {key:'inst',label:'Instrument'},
@@ -1186,6 +1191,7 @@ function renderReports(){
         return `<tr class="${sel?'selected':''}" onclick="toggleRow(${t.id},event)">
           <td class="cb-col" onclick="event.stopPropagation()"><input type="checkbox" ${sel?'checked':''} onchange="toggleSel(${t.id},this)"></td>
           <td style="font-family:'DM Mono',monospace;white-space:nowrap">${t.date||'—'}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:12px">${t.time||'—'}</td>
           <td style="font-size:11px;white-space:nowrap">${t.account||'—'}</td>
           <td style="font-size:11px">${t.session||'—'}</td>
           <td>${t.inst||'—'}</td>
@@ -1422,7 +1428,97 @@ function renderAn(){
           return `<div class="arow"><span class="alabel"><span class="badge grade-${k}">${k}</span></span><div class="prog"><div class="prog-fill" style="width:${wr2}%;background:${col}"></div></div><span class="apct" style="color:${col}">${wr2}%</span><span class="acnt">${v.n}t</span><span style="font-family:'DM Mono',monospace;font-size:11px;min-width:70px;text-align:right;color:${v.p>0?'var(--green)':v.p<0?'var(--red)':'var(--muted)'}">${v.p>0?'+':''}${v.p.toFixed(1)}pts</span></div>`;
         }).join('')||'<div style="font-size:12px;color:var(--hint);padding:8px 0">No data yet</div>'}
       </div>
-    </div>`;
+    </div>
+
+    ${(()=>{
+      const timeBlocks=[
+        {label:'9:30 – 10:30',start:570,end:630},
+        {label:'10:30 – 11:30',start:630,end:690},
+        {label:'11:30 – 12:30',start:690,end:750},
+        {label:'12:30 – 1:30',start:750,end:810},
+        {label:'1:30 – 2:30',start:810,end:870},
+        {label:'2:30 – 4:00',start:870,end:960},
+      ];
+      const tradesWithTime=data.filter(t=>t.time&&t.pnl!=null);
+      if(!tradesWithTime.length) return '<div class="card"><div class="ctitle">Time of day</div><div class="empty">Log trades with entry time to see time of day breakdown.</div></div>';
+      function toMins(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
+      const blockData=timeBlocks.map(b=>{
+        const bt=tradesWithTime.filter(t=>{const m=toMins(t.time);return m>=b.start&&m<b.end;});
+        const bw=bt.filter(t=>t.pnl>0);
+        const bl=bt.filter(t=>t.pnl<=0);
+        const wr=bt.length?Math.round(bw.length/bt.length*100):null;
+        const avgW=bw.length?(bw.reduce((a,t)=>a+t.pnl,0)/bw.length).toFixed(2):null;
+        const avgL=bl.length?(bl.reduce((a,t)=>a+t.pnl,0)/bl.length).toFixed(2):null;
+        const total=bt.reduce((a,t)=>a+t.pnl,0).toFixed(2);
+        return{...b,n:bt.length,wr,avgW,avgL,total};
+      }).filter(b=>b.n>0);
+
+      const days=['Monday','Tuesday','Wednesday','Thursday','Friday'];
+      const dayData=days.map(day=>{
+        const dt=data.filter(t=>{
+          if(!t.date||t.pnl==null)return false;
+          const parts=t.date.split('/');
+          if(parts.length!==3)return false;
+          const d=new Date(parts[2],parts[0]-1,parts[1]);
+          return!isNaN(d)&&d.toLocaleDateString('en-US',{weekday:'long'})===day;
+        });
+        const dw=dt.filter(t=>t.pnl>0);
+        const wr=dt.length?Math.round(dw.length/dt.length*100):null;
+        const total=dt.reduce((a,t)=>a+t.pnl,0).toFixed(2);
+        return{day,n:dt.length,wr,total};
+      }).filter(d=>d.n>0);
+
+      const bestBlock=blockData.length?blockData.reduce((b,c)=>c.wr>b.wr?c:b):null;
+      const worstBlock=blockData.length?blockData.reduce((b,c)=>c.wr<b.wr?c:b):null;
+      const losingBlocks=blockData.filter(b=>b.wr<40);
+      const setupArr=Object.entries(suMap).map(([k,v])=>({name:k,wr:v.n?Math.round(v.w/v.n*100):0,n:v.n,p:v.p})).filter(s=>s.n>=3);
+      const bestSetup=setupArr.length?setupArr.reduce((b,c)=>c.wr>b.wr?c:b):null;
+      const worstSetup=setupArr.length?setupArr.reduce((b,c)=>c.wr<b.wr?c:b):null;
+      const entryArr=Object.entries(entryMap).map(([k,v])=>({name:k,wr:v.n?Math.round(v.w/v.n*100):0,n:v.n,p:v.p})).filter(e=>e.n>=3);
+      const bestEntry=entryArr.length?entryArr.reduce((b,c)=>c.wr>b.wr?c:b):null;
+      const worstEntry=entryArr.length?entryArr.reduce((b,c)=>c.wr<b.wr?c:b):null;
+
+      return (blockData.length?`
+      <div class="card">
+        <div class="ctitle">Time of day</div>
+        <div style="display:grid;grid-template-columns:1fr 70px 80px 80px 80px 45px;gap:6px;margin-bottom:8px">
+          ${['Block','Win%','Avg win','Avg loss','Net P&L','Trades'].map(h=>`<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;text-align:${h==='Block'?'left':'right'}">${h}</div>`).join('')}
+        </div>
+        ${blockData.map(b=>{
+          const col=b.wr>=60?'#2dd4a0':b.wr>=40?'#f0b84a':'#f05a5a';
+          const pCol=parseFloat(b.total)>0?'var(--green)':parseFloat(b.total)<0?'var(--red)':'var(--muted)';
+          return '<div style="display:grid;grid-template-columns:1fr 70px 80px 80px 80px 45px;gap:6px;padding:8px 0;border-bottom:1px solid var(--bs);align-items:center">'
+            +'<span style="font-size:12px">'+b.label+'</span>'
+            +'<span style="font-family:&quot;DM Mono&quot;,monospace;font-size:12px;color:'+col+';text-align:right">'+b.wr+'%</span>'
+            +'<span style="font-family:&quot;DM Mono&quot;,monospace;font-size:11px;color:var(--green);text-align:right">'+(b.avgW?'+$'+b.avgW:'—')+'</span>'
+            +'<span style="font-family:&quot;DM Mono&quot;,monospace;font-size:11px;color:var(--red);text-align:right">'+(b.avgL?'$'+b.avgL:'—')+'</span>'
+            +'<span style="font-family:&quot;DM Mono&quot;,monospace;font-size:11px;color:'+pCol+';text-align:right">'+(parseFloat(b.total)>=0?'+$':'-$')+Math.abs(parseFloat(b.total)).toFixed(2)+'</span>'
+            +'<span style="font-family:&quot;DM Mono&quot;,monospace;font-size:11px;color:var(--muted);text-align:right">'+b.n+'</span>'
+            +'</div>';
+        }).join('')}
+      </div>`:'')
+      +(dayData.length?`
+      <div class="card">
+        <div class="ctitle">Day of week</div>
+        ${dayData.map(d=>{
+          const col=d.wr>=60?'#2dd4a0':d.wr>=40?'#f0b84a':'#f05a5a';
+          const pCol=parseFloat(d.total)>0?'var(--green)':parseFloat(d.total)<0?'var(--red)':'var(--muted)';
+          return '<div class="arow"><span class="alabel">'+d.day+'</span><div class="prog"><div class="prog-fill" style="width:'+d.wr+'%;background:'+col+'"></div></div><span class="apct" style="color:'+col+'">'+d.wr+'%</span><span class="acnt">'+d.n+'t</span><span style="font-family:&quot;DM Mono&quot;,monospace;font-size:11px;min-width:80px;text-align:right;color:'+pCol+'">'+( parseFloat(d.total)>=0?'+$':'-$')+Math.abs(parseFloat(d.total)).toFixed(2)+'</span></div>';
+        }).join('')}
+      </div>`:'')
+      +((bestBlock||bestSetup||bestEntry)?`
+      <div class="card">
+        <div class="ctitle">Pattern detection</div>
+        ${bestBlock?'<div class="insight g"><strong>Best time block:</strong> '+bestBlock.label+' — '+bestBlock.wr+'% win rate ('+bestBlock.n+' trades)</div>':''}
+        ${worstBlock&&worstBlock.wr<bestBlock.wr?'<div class="insight r"><strong>Worst time block:</strong> '+worstBlock.label+' — '+worstBlock.wr+'% win rate. Consider avoiding this window.</div>':''}
+        ${losingBlocks.length?'<div class="insight r"><strong>Consistently losing:</strong> '+losingBlocks.map(b=>b.label).join(', ')+' — all below 40% win rate. Stop trading these hours.</div>':''}
+        ${bestSetup?'<div class="insight g"><strong>Best setup:</strong> '+bestSetup.name+' — '+bestSetup.wr+'% win rate ('+bestSetup.n+' trades)</div>':''}
+        ${worstSetup&&worstSetup.name!==bestSetup.name?'<div class="insight r"><strong>Worst setup:</strong> '+worstSetup.name+' — '+worstSetup.wr+'% win rate ('+worstSetup.n+' trades)</div>':''}
+        ${bestEntry?'<div class="insight g"><strong>Best entry:</strong> '+bestEntry.name+' — '+bestEntry.wr+'% win rate ('+bestEntry.n+' trades)</div>':''}
+        ${worstEntry&&worstEntry.name!==bestEntry.name?'<div class="insight r"><strong>Worst entry:</strong> '+worstEntry.name+' — '+worstEntry.wr+'% win rate ('+worstEntry.n+' trades)</div>':''}
+      </div>`:'');
+    })()}
+  `;
 }
 
 // ── EDIT TRADE ────────────────────────────────────────────────────────────────
@@ -1436,6 +1532,7 @@ function openEdit(id){
 
   document.getElementById('ed-lb').value=t.lb||'';
   document.getElementById('ed-dt').value=t.date||'';
+  document.getElementById('ed-tm').value=t.time||'';
   document.getElementById('ed-ss').value=t.ss!=null?t.ss:'';
   document.getElementById('ed-ct').value=t.contracts!=null?t.contracts:'';
   document.getElementById('ed-pl').value=t.pnl!=null?t.pnl:'';
@@ -1482,6 +1579,7 @@ function saveEdit(){
   T[idx]={...T[idx],
     lb:document.getElementById('ed-lb').value,
     date:document.getElementById('ed-dt').value,
+    time:document.getElementById('ed-tm').value||'',
     inst:gs('ed-in'),account:(document.getElementById('ed-ac').value.trim()),session:gs('ed-se'),dir:gs('ed-dr'),mc:gs('ed-mc'),setup:gs('ed-su'),
     entry:entries,
     ss:parseFloat(document.getElementById('ed-ss').value)||null,
