@@ -154,7 +154,10 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
 
   <!-- Chart paste zone -->
   <div class="card">
-    <div class="ctitle">Chart screenshot</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <div class="ctitle" style="margin-bottom:0">Chart screenshot</div>
+      <button onclick="clearChart()" id="clear-chart-btn" style="display:none;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;">Clear chart</button>
+    </div>
     <img id="imgprev" class="imgprev" alt="Chart">
     <div class="pastezone" id="pastezone" tabindex="0">
       <div id="paste-inner">
@@ -750,6 +753,15 @@ document.addEventListener('DOMContentLoaded',function(){
   }
 });
 
+function clearChart(){
+  imgB64=null;
+  const p=document.getElementById('imgprev');p.style.display='none';p.src='';
+  document.getElementById('pastezone').style.display='block';
+  document.getElementById('aibox').style.display='none';
+  document.getElementById('clear-chart-btn').style.display='none';
+  aiT=[];
+}
+
 function processImg(file){
   const r=new FileReader();
   r.onload=ev=>{
@@ -758,6 +770,8 @@ function processImg(file){
     p.src=ev.target.result;p.style.display='block';
     const zone=document.getElementById('pastezone');
     if(zone)zone.style.display='none';
+    const btn=document.getElementById('clear-chart-btn');
+    if(btn)btn.style.display='block';
     analyzeChart(imgB64);
   };r.readAsDataURL(file);
 }
@@ -914,11 +928,10 @@ function clearF(){
   document.querySelector('#td-se .tag:nth-child(1)').className='tag sel';
   document.getElementById('td-ac').value='';
   document.querySelectorAll('#td-en .tag').forEach(t=>t.className='tag');
+  // deselect AI card but keep chart and cards visible so you can log next trade
   document.querySelectorAll('.aicard').forEach(c=>c.classList.remove('sel'));
-  imgB64=null;
-  const p=document.getElementById('imgprev');p.style.display='none';p.src='';
-  document.getElementById('pastezone').style.display='block';
-  document.getElementById('aibox').style.display='none';
+  // only reset chart if there's no active image
+  // keep imgB64, imgprev, pastezone, and aibox as-is
 }
 
 // ── OVERVIEW ─────────────────────────────────────────────────────────────────
