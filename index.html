@@ -1484,7 +1484,7 @@ function renderAn(){
     <div class="g4" style="margin-bottom:1rem">
       <div class="metric"><div class="mlabel">Trades</div><div class="mval">${data.length}</div></div>
       <div class="metric"><div class="mlabel">Win rate</div><div class="mval ${withPnl.length&&wr>=0.5?'g':'r'}">${withPnl.length?Math.round(wr*100):0}%</div><div class="msub">${wins.length}W · ${losses.length}L</div></div>
-      <div class="metric"><div class="mlabel">Expectancy</div><div class="mval ${exp>0?'g':'r'}" style="font-size:20px">${withPnl.length?(exp>0?'+':'')+exp+'pts':'—'}</div></div>
+      <div class="metric"><div class="mlabel">Expectancy</div><div class="mval ${exp>0?'g':'r'}" style="font-size:20px">${withPnl.length?(exp>0?'+$':'-$')+Math.abs(exp).toFixed(2):'—'}</div></div>
       <div class="metric"><div class="mlabel">Avg R:R</div><div class="mval ${avgRR!=null?(avgRR>0?'g':'r'):''}" style="font-size:20px">${avgRR!=null?(avgRR>0?'+':'')+avgRR+'R':'—'}</div></div>
     </div>
 
@@ -1495,14 +1495,14 @@ function renderAn(){
           const g=data.filter(t=>t.exec===k&&t.pnl!=null);const gw=g.filter(t=>t.pnl>0);const wr2=g.length?Math.round(gw.length/g.length*100):0;
           const col=k==='Executed to plan'?'#2dd4a0':k==='Hesitated'?'#f0b84a':'#f05a5a';
           const pts=g.reduce((a,t)=>a+t.pnl,0);
-          return `<div class="arow"><span class="alabel">${k}</span><div class="prog"><div class="prog-fill" style="width:${wr2}%;background:${col}"></div></div><span class="apct" style="color:${col}">${wr2}%</span><span class="acnt">${g.length}t</span><span style="font-family:'DM Mono',monospace;font-size:11px;min-width:70px;text-align:right;color:${pts>0?'var(--green)':pts<0?'var(--red)':'var(--muted)'}">${pts>0?'+':''}${pts.toFixed(1)}pts</span></div>`;
+          return `<div class="arow"><span class="alabel">${k}</span><div class="prog"><div class="prog-fill" style="width:${wr2}%;background:${col}"></div></div><span class="apct" style="color:${col}">${wr2}%</span><span class="acnt">${g.length}t</span><span style="font-family:'DM Mono',monospace;font-size:11px;min-width:70px;text-align:right;color:${pts>0?'var(--green)':pts<0?'var(--red)':'var(--muted)'}">${pts>0?'+$':'-$'}${Math.abs(pts).toFixed(2)}</span></div>`;
         }).join('')}
       </div>
       <div class="card">
         <div class="ctitle">By market context</div>
         ${Object.entries(mcMap).map(([k,v])=>{
           const wr2=v.n?Math.round(v.w/v.n*100):0;const col=wr2>=60?'#2dd4a0':wr2>=40?'#f0b84a':'#f05a5a';
-          return `<div class="arow"><span class="alabel">${k}</span><div class="prog"><div class="prog-fill" style="width:${wr2}%;background:${col}"></div></div><span class="apct" style="color:${col}">${wr2}%</span><span class="acnt">${v.n}t</span><span style="font-family:'DM Mono',monospace;font-size:11px;min-width:70px;text-align:right;color:${v.p>0?'var(--green)':v.p<0?'var(--red)':'var(--muted)'}">${v.p>0?'+':''}${v.p.toFixed(1)}pts</span></div>`;
+          return `<div class="arow"><span class="alabel">${k}</span><div class="prog"><div class="prog-fill" style="width:${wr2}%;background:${col}"></div></div><span class="apct" style="color:${col}">${wr2}%</span><span class="acnt">${v.n}t</span><span style="font-family:'DM Mono',monospace;font-size:11px;min-width:70px;text-align:right;color:${v.p>0?'var(--green)':v.p<0?'var(--red)':'var(--muted)'}">${v.p>0?'+$':'-$'}${Math.abs(v.p).toFixed(2)}</span></div>`;
         }).join('')||'<div style="font-size:12px;color:var(--hint);padding:8px 0">No data yet</div>'}
       </div>
     </div>
@@ -1511,7 +1511,7 @@ function renderAn(){
       <div class="ctitle">By entry criteria</div>
       ${Object.entries(entryMap).sort((a,b)=>b[1].n-a[1].n).map(([k,v])=>{
         const wr2=v.n?Math.round(v.w/v.n*100):0;const col=wr2>=60?'#2dd4a0':wr2>=40?'#f0b84a':'#f05a5a';
-        return `<div class="arow"><span class="alabel" style="min-width:200px">${k}</span><div class="prog"><div class="prog-fill" style="width:${wr2}%;background:${col}"></div></div><span class="apct" style="color:${col}">${wr2}%</span><span class="acnt">${v.n}t</span><span style="font-family:'DM Mono',monospace;font-size:11px;min-width:70px;text-align:right;color:${v.p>0?'var(--green)':v.p<0?'var(--red)':'var(--muted)'}">${v.p>0?'+':''}${v.p.toFixed(1)}pts</span></div>`;
+        return `<div class="arow"><span class="alabel" style="min-width:200px">${k}</span><div class="prog"><div class="prog-fill" style="width:${wr2}%;background:${col}"></div></div><span class="apct" style="color:${col}">${wr2}%</span><span class="acnt">${v.n}t</span><span style="font-family:'DM Mono',monospace;font-size:11px;min-width:70px;text-align:right;color:${v.p>0?'var(--green)':v.p<0?'var(--red)':'var(--muted)'}">${v.p>0?'+$':'-$'}${Math.abs(v.p).toFixed(2)}</span></div>`;
       }).join('')||'<div style="font-size:12px;color:var(--hint);padding:8px 0">No data yet</div>'}
     </div>
 
@@ -1529,7 +1529,7 @@ function renderAn(){
           const v=gradeMap[k]||{n:0,w:0,p:0};
           if(!v.n)return'';
           const wr2=Math.round(v.w/v.n*100);const col=wr2>=60?'#2dd4a0':wr2>=40?'#f0b84a':'#f05a5a';
-          return `<div class="arow"><span class="alabel"><span class="badge grade-${k}">${k}</span></span><div class="prog"><div class="prog-fill" style="width:${wr2}%;background:${col}"></div></div><span class="apct" style="color:${col}">${wr2}%</span><span class="acnt">${v.n}t</span><span style="font-family:'DM Mono',monospace;font-size:11px;min-width:70px;text-align:right;color:${v.p>0?'var(--green)':v.p<0?'var(--red)':'var(--muted)'}">${v.p>0?'+':''}${v.p.toFixed(1)}pts</span></div>`;
+          return `<div class="arow"><span class="alabel"><span class="badge grade-${k}">${k}</span></span><div class="prog"><div class="prog-fill" style="width:${wr2}%;background:${col}"></div></div><span class="apct" style="color:${col}">${wr2}%</span><span class="acnt">${v.n}t</span><span style="font-family:'DM Mono',monospace;font-size:11px;min-width:70px;text-align:right;color:${v.p>0?'var(--green)':v.p<0?'var(--red)':'var(--muted)'}">${v.p>0?'+$':'-$'}${Math.abs(v.p).toFixed(2)}</span></div>`;
         }).join('')||'<div style="font-size:12px;color:var(--hint);padding:8px 0">No data yet</div>'}
       </div>
     </div>
