@@ -205,6 +205,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
             <span class="tag" onclick="st(this,'td-su')">Head & Shoulders</span>
             <span class="tag" onclick="st(this,'td-su')">Cup & Handle</span>
             <span class="tag" onclick="st(this,'td-su')">ZOMI</span>
+            <span class="tag" onclick="st(this,'td-su','a')">Thin structure</span>
           </div>
         </div>
         <div class="fg"><label>Entry criteria <span style="font-size:10px;color:var(--hint);font-weight:400;text-transform:none;letter-spacing:0">(select all that apply)</span></label>
@@ -222,6 +223,8 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
             <span class="tag" onclick="mt(this)">5 DMA</span>
             <span class="tag" onclick="mt(this)">20 DMA</span>
             <span class="tag" onclick="mt(this)">Left shoulder S/R</span>
+            <span class="tag" onclick="mt(this)">Ascending wedge</span>
+            <span class="tag" onclick="mt(this)">Descending wedge</span>
             <span class="tag" onclick="mt(this,'a')">Early</span>
             <span class="tag" onclick="mt(this,'r')">Chased / FOMO</span>
           </div>
@@ -303,6 +306,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
         <label><input type="checkbox" value="Head & Shoulders" onchange="renderReports()"> Head & Shoulders</label>
         <label><input type="checkbox" value="Cup & Handle" onchange="renderReports()"> Cup & Handle</label>
         <label><input type="checkbox" value="ZOMI" onchange="renderReports()"> ZOMI</label>
+        <label><input type="checkbox" value="Thin structure" onchange="renderReports()"> Thin structure</label>
       </div>
     </div>
     <!-- Multi-select: Entry criteria -->
@@ -322,6 +326,8 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
         <label><input type="checkbox" value="5 DMA" onchange="renderReports()"> 5 DMA</label>
         <label><input type="checkbox" value="20 DMA" onchange="renderReports()"> 20 DMA</label>
         <label><input type="checkbox" value="Left shoulder S/R" onchange="renderReports()"> Left shoulder S/R</label>
+        <label><input type="checkbox" value="Ascending wedge" onchange="renderReports()"> Ascending wedge</label>
+        <label><input type="checkbox" value="Descending wedge" onchange="renderReports()"> Descending wedge</label>
         <label><input type="checkbox" value="Early" onchange="renderReports()"> Early</label>
         <label><input type="checkbox" value="Chased / FOMO" onchange="renderReports()"> Chased / FOMO</label>
       </div>
@@ -447,7 +453,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
       <div class="tg" id="bed-mc"><span class="tag" onclick="st(this,'bed-mc','g')">Buying continuation</span><span class="tag" onclick="st(this,'bed-mc','r')">Selling continuation</span><span class="tag" onclick="st(this,'bed-mc','a')">Chop</span></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Setup</label>
-      <div class="tg" id="bed-su"><span class="tag" onclick="st(this,'bed-su')">Head & Shoulders</span><span class="tag" onclick="st(this,'bed-su')">Cup & Handle</span><span class="tag" onclick="st(this,'bed-su')">ZOMI</span></div>
+      <div class="tg" id="bed-su"><span class="tag" onclick="st(this,'bed-su')">Head & Shoulders</span><span class="tag" onclick="st(this,'bed-su')">Cup & Handle</span><span class="tag" onclick="st(this,'bed-su')">ZOMI</span><span class="tag" onclick="st(this,'bed-su','a')">Thin structure</span></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Execution</label>
       <div class="tg" id="bed-ex"><span class="tag" onclick="st(this,'bed-ex','g')">Executed to plan</span><span class="tag" onclick="st(this,'bed-ex','a')">Hesitated</span><span class="tag" onclick="st(this,'bed-ex','r')">No valid setup</span></div>
@@ -490,11 +496,11 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
       <div class="tg" id="ed-mc"><span class="tag" onclick="st(this,'ed-mc','g')">Buying continuation</span><span class="tag" onclick="st(this,'ed-mc','r')">Selling continuation</span><span class="tag" onclick="st(this,'ed-mc','a')">Chop</span></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Setup</label>
-      <div class="tg" id="ed-su"><span class="tag" onclick="st(this,'ed-su')">Head & Shoulders</span><span class="tag" onclick="st(this,'ed-su')">Cup & Handle</span><span class="tag" onclick="st(this,'ed-su')">ZOMI</span></div>
+      <div class="tg" id="ed-su"><span class="tag" onclick="st(this,'ed-su')">Head & Shoulders</span><span class="tag" onclick="st(this,'ed-su')">Cup & Handle</span><span class="tag" onclick="st(this,'ed-su')">ZOMI</span><span class="tag" onclick="st(this,'ed-su','a')">Thin structure</span></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Entry criteria <span style="font-size:10px;color:var(--hint);font-weight:400;text-transform:none">(select all that apply)</span></label>
       <div class="tg" id="ed-en">
-        <span class="tag" onclick="mt(this)">Liquidity building algo</span><span class="tag" onclick="mt(this)">Control algo</span><span class="tag" onclick="mt(this)">Precision algo</span><span class="tag" onclick="mt(this)">Break & retest</span><span class="tag" onclick="mt(this)">Break of</span><span class="tag" onclick="mt(this)">Re-entry</span><span class="tag" onclick="mt(this)">Good fill</span><span class="tag" onclick="mt(this,'r')">Bad fill</span><span class="tag" onclick="mt(this)">Wedge</span><span class="tag" onclick="mt(this)">Micro-structure</span><span class="tag" onclick="mt(this)">5 DMA</span><span class="tag" onclick="mt(this)">20 DMA</span><span class="tag" onclick="mt(this)">Left shoulder S/R</span><span class="tag" onclick="mt(this,'a')">Early</span><span class="tag" onclick="mt(this,'r')">Chased / FOMO</span>
+        <span class="tag" onclick="mt(this)">Liquidity building algo</span><span class="tag" onclick="mt(this)">Control algo</span><span class="tag" onclick="mt(this)">Precision algo</span><span class="tag" onclick="mt(this)">Break & retest</span><span class="tag" onclick="mt(this)">Break of</span><span class="tag" onclick="mt(this)">Re-entry</span><span class="tag" onclick="mt(this)">Good fill</span><span class="tag" onclick="mt(this,'r')">Bad fill</span><span class="tag" onclick="mt(this)">Wedge</span><span class="tag" onclick="mt(this)">Micro-structure</span><span class="tag" onclick="mt(this)">5 DMA</span><span class="tag" onclick="mt(this)">20 DMA</span><span class="tag" onclick="mt(this)">Left shoulder S/R</span><span class="tag" onclick="mt(this)">Ascending wedge</span><span class="tag" onclick="mt(this)">Descending wedge</span><span class="tag" onclick="mt(this,'a')">Early</span><span class="tag" onclick="mt(this,'r')">Chased / FOMO</span>
       </div>
     </div>
     <div class="g2" style="gap:10px;margin-bottom:12px">
