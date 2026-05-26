@@ -197,6 +197,21 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
             <span class="tag" onclick="st(this,'td-ac')">Personal</span>
           </div>
         </div>
+        <div class="fg" style="margin-bottom:12px"><label>Session</label>
+          <div class="tg" id="td-se">
+            <span class="tag sel" onclick="st(this,'td-se')">NY</span>
+            <span class="tag" onclick="st(this,'td-se')">Asia</span>
+            <span class="tag" onclick="st(this,'td-se')">London</span>
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:12px"><label>Session</label>
+          <div class="tg" id="td-se">
+            <span class="tag sel" onclick="st(this,'td-se')">New York</span>
+            <span class="tag" onclick="st(this,'td-se')">Asian</span>
+            <span class="tag" onclick="st(this,'td-se')">London</span>
+            
+          </div>
+        </div>
         <div class="fg" style="margin-bottom:12px"><label>Direction</label>
           <div class="tg" id="td-dr">
             <span class="tag" onclick="st(this,'td-dr','g')">Long</span>
@@ -254,7 +269,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
 
         <div class="sdiv">Execution & outcome</div>
         <div class="g2" style="gap:10px;margin-bottom:12px">
-          <div class="fg"><label>P&L (pts)</label><input type="number" id="td-pl" step="0.25" placeholder="+8.00"></div>
+          <div class="fg"><label>P&L ($)</label><input type="number" id="td-pl" step="0.01" placeholder="+50.00"></div>
           <div class="fg"><label>R multiple</label><input type="number" id="td-rr" step="0.25" placeholder="+2"></div>
         </div>
         <div class="fg" style="margin-bottom:12px"><label>Execution</label>
@@ -304,6 +319,8 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
   <div class="fbar" id="report-filters">
     <input type="date" id="rf-from" onchange="renderReports()" title="From date">
     <input type="date" id="rf-to" onchange="renderReports()" title="To date">
+    <select id="rf-se" onchange="renderReports()"><option value="">All sessions</option><option>New York</option><option>Asian</option><option>London</option></select>
+    <select id="rf-se" onchange="renderReports()"><option value="">All sessions</option><option>NY</option><option>Asia</option><option>London</option></select>
     <select id="rf-ac" onchange="renderReports()"><option value="">All accounts</option><option>Paper</option><option>Prop - Tradeify</option><option>Prop - Topstep</option><option>Prop - TPT</option><option>Prop - Lucid</option><option>Personal</option></select>
     <select id="rf-inst" onchange="renderReports()"><option value="">All instruments</option><option>ES</option><option>MES</option><option>NQ</option><option>MNQ</option></select>
     <select id="rf-dir" onchange="renderReports()"><option value="">All directions</option><option>Long</option><option>Short</option></select>
@@ -408,7 +425,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     if (sheet.getLastRow() === 0) {
       sheet.appendRow(['ID','Date','Label','Instrument','Direction','Context',
         'Setup','Entry Criteria','Stop Size (pts)','Contracts',
-        'P&L (pts)','R','Execution','Protected','Grade','Notes']);
+        'P&L ($)','R','Execution','Protected','Grade','Notes']);
     }
   }
 
@@ -445,6 +462,8 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
   <div class="fbar">
     <input type="date" id="af-from" onchange="renderAn()" title="From date">
     <input type="date" id="af-to" onchange="renderAn()" title="To date">
+    <select id="af-se" onchange="renderAn()"><option value="">All sessions</option><option>New York</option><option>Asian</option><option>London</option></select>
+    <select id="af-se" onchange="renderAn()"><option value="">All sessions</option><option>NY</option><option>Asia</option><option>London</option></select>
     <select id="af-ac" onchange="renderAn()"><option value="">All accounts</option><option>Paper</option><option>Prop - Tradeify</option><option>Prop - Topstep</option><option>Prop - TPT</option><option>Prop - Lucid</option><option>Personal</option></select>
     <select id="af-inst" onchange="renderAn()"><option value="">All instruments</option><option>ES</option><option>MES</option><option>NQ</option><option>MNQ</option></select>
     <button class="btn" onclick="clearAnFilters()" style="padding:6px 12px;font-size:12px">Clear</button>
@@ -504,6 +523,12 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     <div class="fg" style="margin-bottom:12px"><label>Account</label>
       <div class="tg" id="ed-ac"><span class="tag" onclick="st(this,'ed-ac')">Paper</span><span class="tag" onclick="st(this,'ed-ac')">Prop - Tradeify</span><span class="tag" onclick="st(this,'ed-ac')">Prop - Topstep</span><span class="tag" onclick="st(this,'ed-ac')">Prop - TPT</span><span class="tag" onclick="st(this,'ed-ac')">Prop - Lucid</span><span class="tag" onclick="st(this,'ed-ac')">Personal</span></div>
     </div>
+    <div class="fg" style="margin-bottom:12px"><label>Session</label>
+      <div class="tg" id="ed-se"><span class="tag" onclick="st(this,'ed-se')">NY</span><span class="tag" onclick="st(this,'ed-se')">Asia</span><span class="tag" onclick="st(this,'ed-se')">London</span></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Session</label>
+      <div class="tg" id="ed-se"><span class="tag" onclick="st(this,'ed-se')">New York</span><span class="tag" onclick="st(this,'ed-se')">Asian</span><span class="tag" onclick="st(this,'ed-se')">London</span></div>
+    </div>
     <div class="fg" style="margin-bottom:12px"><label>Direction</label>
       <div class="tg" id="ed-dr"><span class="tag" onclick="st(this,'ed-dr','g')">Long</span><span class="tag" onclick="st(this,'ed-dr','r')">Short</span></div>
     </div>
@@ -523,7 +548,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
       <div class="fg"><label># Contracts</label><input type="number" id="ed-ct" step="1" min="1"></div>
     </div>
     <div class="g2" style="gap:10px;margin-bottom:12px">
-      <div class="fg"><label>P&L (pts)</label><input type="number" id="ed-pl" step="0.25"></div>
+      <div class="fg"><label>P&L ($)</label><input type="number" id="ed-pl" step="0.01"></div>
       <div class="fg"><label>R multiple</label><input type="number" id="ed-rr" step="0.25"></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Execution</label>
@@ -643,9 +668,9 @@ function copyScript(){
 // ── EXPORT CSV ────────────────────────────────────────────────────────────────
 function exportCSV(){
   if(!T.length){alert('No trades to export yet.');return;}
-  const headers=['ID','Date','Label','Account','Instrument','Direction','Context','Setup','Entry Criteria','Stop Size (pts)','Contracts','P&L (pts)','R','Execution','Protected','Grade','Notes'];
+  const headers=['ID','Date','Label','Account','Session','Instrument','Direction','Context','Setup','Entry Criteria','Stop Size (pts)','Contracts','P&L ($)','R','Execution','Protected','Grade','Notes'];
   const rows=T.map(t=>[
-    t.id,t.date,t.lb,t.account,t.inst,t.dir,t.mc,t.setup,
+    t.id,t.date,t.lb,t.account,t.session,t.inst,t.dir,t.mc,t.setup,
     Array.isArray(t.entry)?t.entry.join('; '):(t.entry||''),
     t.ss,t.contracts,t.pnl,t.rr,t.exec,t.protected,t.grade,
     (t.notes||'').replace(/"/g,'""')
@@ -857,7 +882,7 @@ function saveT(){
     id:Date.now(),
     lb:document.getElementById('td-lb').value,
     date:(()=>{const _d=document.getElementById('td-dt').value;if(_d)return _d;const _nd=new Date();return(_nd.getMonth()+1).toString().padStart(2,'0')+'/'+_nd.getDate().toString().padStart(2,'0')+'/'+_nd.getFullYear();})(),
-    inst:gs('td-in'),account:gs('td-ac'),dir:gs('td-dr'),
+    inst:gs('td-in'),account:gs('td-ac'),session:gs('td-se'),dir:gs('td-dr'),
     mc:gs('td-mc'),setup:gs('td-su'),
     entry:gm('td-en'),
     ss:parseFloat(document.getElementById('td-ss').value)||null,
@@ -877,12 +902,13 @@ function saveT(){
 
 function clearF(){
   ['td-lb','td-dt','td-ss','td-ct','td-pl','td-rr','td-nt'].forEach(id=>{document.getElementById(id).value='';});
-  ['td-in','td-ac','td-dr','td-mc','td-su','td-ex','td-pr','td-gr'].forEach(g=>{
+  ['td-in','td-ac','td-se','td-dr','td-mc','td-su','td-ex','td-pr','td-gr'].forEach(g=>{
     document.querySelectorAll(`#${g} .tag`).forEach(t=>t.className='tag');
   });
   // re-select defaults
   document.querySelector('#td-in .tag:nth-child(2)').className='tag sel';
   document.querySelector('#td-ac .tag:nth-child(1)').className='tag sel';
+  document.querySelector('#td-se .tag:nth-child(1)').className='tag sel';
   document.querySelectorAll('#td-en .tag').forEach(t=>t.className='tag');
   document.querySelectorAll('.aicard').forEach(c=>c.classList.remove('sel'));
   imgB64=null;
@@ -1078,6 +1104,8 @@ function filteredTrades(){
   let data=[...T];
   const from=document.getElementById('rf-from')?.value;
   const to=document.getElementById('rf-to')?.value;
+  const se=document.getElementById('rf-se')?.value;
+  const se=document.getElementById('rf-se')?.value;
   const ac=document.getElementById('rf-ac')?.value;
   const inst=document.getElementById('rf-inst')?.value;
   const dir=document.getElementById('rf-dir')?.value;
@@ -1088,6 +1116,8 @@ function filteredTrades(){
   const entries=getChecked('ms-entry-panel');
   if(from) data=data.filter(t=>new Date(t.date.split('/').length===3?t.date.split('/')[2]+'-'+t.date.split('/')[0]+'-'+t.date.split('/')[1]:t.date)>=new Date(from));
   if(to) data=data.filter(t=>new Date(t.date.split('/').length===3?t.date.split('/')[2]+'-'+t.date.split('/')[0]+'-'+t.date.split('/')[1]:t.date)<=new Date(to));
+  if(se) data=data.filter(t=>t.session===se);
+  if(se) data=data.filter(t=>t.session===se);
   if(ac) data=data.filter(t=>t.account===ac);
   if(inst) data=data.filter(t=>t.inst===inst);
   if(dir) data=data.filter(t=>t.dir===dir);
@@ -1125,6 +1155,7 @@ function renderReports(){
     {key:'sel',label:''},
     {key:'date',label:'Date'},
     {key:'account',label:'Account'},
+    {key:'session',label:'Session'},
     {key:'inst',label:'Instrument'},
     {key:'dir',label:'Direction'},
     {key:'mc',label:'Context'},
@@ -1158,6 +1189,7 @@ function renderReports(){
           <td class="cb-col" onclick="event.stopPropagation()"><input type="checkbox" ${sel?'checked':''} onchange="toggleSel(${t.id},this)"></td>
           <td style="font-family:'DM Mono',monospace;white-space:nowrap">${t.date||'—'}</td>
           <td style="font-size:11px;white-space:nowrap">${t.account||'—'}</td>
+          <td style="font-size:11px">${t.session||'—'}</td>
           <td>${t.inst||'—'}</td>
           <td>${dirBadge}</td>
           <td style="font-size:11px;white-space:nowrap">${t.mc||'—'}</td>
@@ -1273,7 +1305,7 @@ function editSelected(){
 }
 function clearFilters(){
   ['rf-from','rf-to'].forEach(id=>{document.getElementById(id).value='';});
-  ['rf-ac','rf-inst','rf-dir','rf-mc','rf-ex','rf-gr'].forEach(id=>{document.getElementById(id).value='';});
+  ['rf-se','rf-ac','rf-inst','rf-dir','rf-mc','rf-ex','rf-gr'].forEach(id=>{document.getElementById(id).value='';});
   document.querySelectorAll('.ms-panel input[type=checkbox]').forEach(cb=>cb.checked=false);
   document.querySelectorAll('.ms-btn').forEach(b=>{b.className='ms-btn';});
   document.getElementById('ms-setup-btn').textContent='Setup ▾';
@@ -1286,17 +1318,21 @@ function getAnData(){
   let data=[...T];
   const from=document.getElementById('af-from')?.value;
   const to=document.getElementById('af-to')?.value;
+  const afse=document.getElementById('af-se')?.value;
+  const afse=document.getElementById('af-se')?.value;
   const afac=document.getElementById('af-ac')?.value;
   const inst=document.getElementById('af-inst')?.value;
   if(from) data=data.filter(t=>new Date(t.date.split('/').length===3?t.date.split('/')[2]+'-'+t.date.split('/')[0]+'-'+t.date.split('/')[1]:t.date)>=new Date(from));
   if(to) data=data.filter(t=>new Date(t.date.split('/').length===3?t.date.split('/')[2]+'-'+t.date.split('/')[0]+'-'+t.date.split('/')[1]:t.date)<=new Date(to));
   if(ac) data=data.filter(t=>t.account===ac);
+  if(afse) data=data.filter(t=>t.session===afse);
+  if(afse) data=data.filter(t=>t.session===afse);
   if(afac) data=data.filter(t=>t.account===afac);
   if(inst) data=data.filter(t=>t.inst===inst);
   return data;
 }
 function clearAnFilters(){
-  ['af-from','af-to','af-ac','af-inst'].forEach(id=>{document.getElementById(id).value='';});
+  ['af-from','af-to','af-se','af-ac','af-inst'].forEach(id=>{document.getElementById(id).value='';});
   renderAn();
 }
 
@@ -1421,7 +1457,7 @@ function openEdit(id){
       if(tag.textContent.trim()===val)tag.click();
     });
   };
-  setTag('ed-in',t.inst);setTag('ed-ac',t.account);setTag('ed-dr',t.dir);setTag('ed-mc',t.mc);
+  setTag('ed-in',t.inst);setTag('ed-ac',t.account);setTag('ed-se',t.session);setTag('ed-dr',t.dir);setTag('ed-mc',t.mc);
   setTag('ed-su',t.setup);setTag('ed-ex',t.exec);setTag('ed-pr',t.protected);setTag('ed-gr',t.grade);
 
   const entries=Array.isArray(t.entry)?t.entry:(t.entry?[t.entry]:[]);
@@ -1449,7 +1485,7 @@ function saveEdit(){
   T[idx]={...T[idx],
     lb:document.getElementById('ed-lb').value,
     date:document.getElementById('ed-dt').value,
-    inst:gs('ed-in'),account:gs('ed-ac'),dir:gs('ed-dr'),mc:gs('ed-mc'),setup:gs('ed-su'),
+    inst:gs('ed-in'),account:gs('ed-ac'),session:gs('ed-se'),dir:gs('ed-dr'),mc:gs('ed-mc'),setup:gs('ed-su'),
     entry:entries,
     ss:parseFloat(document.getElementById('ed-ss').value)||null,
     contracts:parseInt(document.getElementById('ed-ct').value)||null,
