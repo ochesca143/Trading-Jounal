@@ -99,7 +99,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
 .fbar select:focus{outline:none;border-color:var(--acc);}
 .fbar input[type=date]{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;}
 .fbar input[type=date]:focus{outline:none;border-color:var(--acc);}
-.del-bar{display:none;align-items:center;gap:12px;background:var(--rbg);border:1px solid var(--rbr);border-radius:8px;padding:10px 16px;margin-bottom:1rem;font-size:13px;color:var(--red);}
+.del-bar{display:none;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 18px;font-size:13px;color:var(--text);position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:500;box-shadow:0 8px 32px rgba(0,0,0,0.5);white-space:nowrap;}
 /* Edit modal */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
@@ -243,6 +243,8 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
             <span class="tag" onclick="mt(this)">5 DMA</span>
             <span class="tag" onclick="mt(this)">20 DMA</span>
             <span class="tag" onclick="mt(this)">Left shoulder S/R</span>
+            <span class="tag" onclick="mt(this)">Strong resistance</span>
+            <span class="tag" onclick="mt(this)">Strong support</span>
             <span class="tag" onclick="mt(this)">Ascending wedge</span>
             <span class="tag" onclick="mt(this)">Descending wedge</span>
             <span class="tag" onclick="mt(this,'a')">Early</span>
@@ -348,6 +350,8 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
         <label><input type="checkbox" value="5 DMA" onchange="renderReports()"> 5 DMA</label>
         <label><input type="checkbox" value="20 DMA" onchange="renderReports()"> 20 DMA</label>
         <label><input type="checkbox" value="Left shoulder S/R" onchange="renderReports()"> Left shoulder S/R</label>
+        <label><input type="checkbox" value="Strong resistance" onchange="renderReports()"> Strong resistance</label>
+        <label><input type="checkbox" value="Strong support" onchange="renderReports()"> Strong support</label>
         <label><input type="checkbox" value="Ascending wedge" onchange="renderReports()"> Ascending wedge</label>
         <label><input type="checkbox" value="Descending wedge" onchange="renderReports()"> Descending wedge</label>
         <label><input type="checkbox" value="Early" onchange="renderReports()"> Early</label>
@@ -364,7 +368,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     <button class="btn" onclick="clearSel()" style="padding:6px 14px;font-size:12px">Cancel</button>
   </div>
   <!-- Inline delete confirmation — no browser dialog needed -->
-  <div id="del-confirm" style="display:none;align-items:center;gap:10px;background:#2a0f0f;border:1px solid #4a1e1e;border-radius:8px;padding:10px 16px;margin-bottom:1rem;font-size:13px;color:#f05a5a;">
+  <div id="del-confirm" style="display:none;align-items:center;gap:10px;background:var(--card);border:1px solid var(--rbr);border-radius:12px;padding:10px 18px;font-size:13px;color:var(--red);position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:500;box-shadow:0 8px 32px rgba(0,0,0,0.5);white-space:nowrap;">
     <span id="del-confirm-txt"></span>
     <button class="btn danger" onclick="confirmDelete()" style="padding:5px 14px;font-size:12px">Yes, delete</button>
     <button class="btn" onclick="cancelDelete()" style="padding:5px 14px;font-size:12px">No, keep</button>
@@ -544,7 +548,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Entry criteria <span style="font-size:10px;color:var(--hint);font-weight:400;text-transform:none">(select all that apply)</span></label>
       <div class="tg" id="ed-en">
-        <span class="tag" onclick="mt(this)">Liquidity building algo</span><span class="tag" onclick="mt(this)">Control algo</span><span class="tag" onclick="mt(this)">Precision algo</span><span class="tag" onclick="mt(this)">Break & retest</span><span class="tag" onclick="mt(this)">Break of</span><span class="tag" onclick="mt(this)">Re-entry</span><span class="tag" onclick="mt(this)">Good fill</span><span class="tag" onclick="mt(this,'r')">Bad fill</span><span class="tag" onclick="mt(this)">Wedge</span><span class="tag" onclick="mt(this)">Micro-structure</span><span class="tag" onclick="mt(this)">5 DMA</span><span class="tag" onclick="mt(this)">20 DMA</span><span class="tag" onclick="mt(this)">Left shoulder S/R</span><span class="tag" onclick="mt(this)">Ascending wedge</span><span class="tag" onclick="mt(this)">Descending wedge</span><span class="tag" onclick="mt(this,'a')">Early</span><span class="tag" onclick="mt(this,'r')">Chased / FOMO</span>
+        <span class="tag" onclick="mt(this)">Liquidity building algo</span><span class="tag" onclick="mt(this)">Control algo</span><span class="tag" onclick="mt(this)">Precision algo</span><span class="tag" onclick="mt(this)">Break & retest</span><span class="tag" onclick="mt(this)">Break of</span><span class="tag" onclick="mt(this)">Re-entry</span><span class="tag" onclick="mt(this)">Good fill</span><span class="tag" onclick="mt(this,'r')">Bad fill</span><span class="tag" onclick="mt(this)">Wedge</span><span class="tag" onclick="mt(this)">Micro-structure</span><span class="tag" onclick="mt(this)">5 DMA</span><span class="tag" onclick="mt(this)">20 DMA</span><span class="tag" onclick="mt(this)">Left shoulder S/R</span><span class="tag" onclick="mt(this)">Strong resistance</span><span class="tag" onclick="mt(this)">Strong support</span><span class="tag" onclick="mt(this)">Ascending wedge</span><span class="tag" onclick="mt(this)">Descending wedge</span><span class="tag" onclick="mt(this,'a')">Early</span><span class="tag" onclick="mt(this,'r')">Chased / FOMO</span>
       </div>
     </div>
     <div class="g2" style="gap:10px;margin-bottom:12px">
