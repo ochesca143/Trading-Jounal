@@ -477,8 +477,19 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
   <div class="ptitle">Edge analytics</div>
   <div class="psub">Where your edge is working and where it's leaking</div>
   <div class="fbar">
-    <input type="date" id="af-from" onchange="renderAn()" title="From date">
-    <input type="date" id="af-to" onchange="renderAn()" title="To date">
+    <select id="af-period" onchange="handleAnPeriod()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:'Syne',sans-serif;font-weight:500;">
+      <option value="today">Today</option>
+      <option value="week">This week</option>
+      <option value="month">This month</option>
+      <option value="ytd">Year to date</option>
+      <option value="all" selected>All time</option>
+      <option value="custom">Custom range</option>
+    </select>
+    <div id="af-custom-dates" style="display:none;gap:6px;align-items:center">
+      <input type="date" id="af-from" onchange="renderAn()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;">
+      <span style="font-size:12px;color:var(--muted)">to</span>
+      <input type="date" id="af-to" onchange="renderAn()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;">
+    </div>
     <select id="af-se" onchange="renderAn()"><option value="">All sessions</option><option>NY</option><option>Asia</option><option>London</option></select>
     <select id="af-ac" onchange="renderAn()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:'Syne',sans-serif;"><option value="">All accounts</option></select>
     <select id="af-inst" onchange="renderAn()"><option value="">All instruments</option><option>ES</option><option>MES</option><option>NQ</option><option>MNQ</option></select>
@@ -1381,23 +1392,56 @@ function clearFilters(){
 }
 
 // ── EDGE ANALYTICS ────────────────────────────────────────────────────────────
+function handleAnPeriod(){
+  const p=document.getElementById('af-period').value;
+  const cd=document.getElementById('af-custom-dates');
+  if(cd) cd.style.display=p==='custom'?'flex':'none';
+  renderAn();
+}
+
 function getAnData(){
   let data=[...T];
-  const from=document.getElementById('af-from')?.value;
-  const to=document.getElementById('af-to')?.value;
+  const period=document.getElementById('af-period')?.value||'all';
+  const now=new Date();
+
+  function parseDate(str){
+    if(!str)return null;
+    const parts=str.split('/');
+    if(parts.length===3)return new Date(parts[2],parts[0]-1,parts[1]);
+    return new Date(str);
+  }
+
+  if(period==='today'){
+    data=data.filter(t=>{const d=parseDate(t.date);return d&&d.toDateString()===now.toDateString();});
+  } else if(period==='week'){
+    const startOfWeek=new Date(now);startOfWeek.setDate(now.getDate()-now.getDay()+1);startOfWeek.setHours(0,0,0,0);
+    data=data.filter(t=>{const d=parseDate(t.date);return d&&d>=startOfWeek;});
+  } else if(period==='month'){
+    data=data.filter(t=>{const d=parseDate(t.date);return d&&d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+  } else if(period==='ytd'){
+    data=data.filter(t=>{const d=parseDate(t.date);return d&&d.getFullYear()===now.getFullYear();});
+  } else if(period==='custom'){
+    const from=document.getElementById('af-from')?.value;
+    const to=document.getElementById('af-to')?.value;
+    if(from) data=data.filter(t=>{const d=parseDate(t.date);return d&&d>=new Date(from);});
+    if(to) data=data.filter(t=>{const d=parseDate(t.date);return d&&d<=new Date(to);});
+  }
+
   const afse=document.getElementById('af-se')?.value;
   const afac=document.getElementById('af-ac')?.value;
   const inst=document.getElementById('af-inst')?.value;
-  if(from) data=data.filter(t=>new Date(t.date.split('/').length===3?t.date.split('/')[2]+'-'+t.date.split('/')[0]+'-'+t.date.split('/')[1]:t.date)>=new Date(from));
-  if(to) data=data.filter(t=>new Date(t.date.split('/').length===3?t.date.split('/')[2]+'-'+t.date.split('/')[0]+'-'+t.date.split('/')[1]:t.date)<=new Date(to));
-  if(ac) data=data.filter(t=>t.account===ac);
   if(afse) data=data.filter(t=>t.session===afse);
   if(afac) data=data.filter(t=>t.account===afac);
   if(inst) data=data.filter(t=>t.inst===inst);
   return data;
 }
+
 function clearAnFilters(){
-  ['af-from','af-to','af-se','af-ac','af-inst'].forEach(id=>{document.getElementById(id).value='';}); populateAcDropdowns();
+  const p=document.getElementById('af-period');if(p)p.value='all';
+  const cd=document.getElementById('af-custom-dates');if(cd)cd.style.display='none';
+  ['af-from','af-to','af-se','af-inst'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const afac=document.getElementById('af-ac');if(afac)afac.value='';
+  populateAcDropdowns();
   renderAn();
 }
 
