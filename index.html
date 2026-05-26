@@ -311,7 +311,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     <input type="date" id="rf-from" onchange="renderReports()" title="From date">
     <input type="date" id="rf-to" onchange="renderReports()" title="To date">
     <select id="rf-se" onchange="renderReports()"><option value="">All sessions</option><option>NY</option><option>Asia</option><option>London</option></select>
-    <select id="rf-ac" onchange="renderReports()"><option value="">All accounts</option><option>Paper</option><option>Prop - Tradeify</option><option>Prop - Topstep</option><option>Prop - TPT</option><option>Prop - Lucid</option><option>Personal</option></select>
+    <input type="text" id="rf-ac" placeholder="Filter by account..." oninput="renderReports()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:'Syne',sans-serif;width:160px;">
     <select id="rf-inst" onchange="renderReports()"><option value="">All instruments</option><option>ES</option><option>MES</option><option>NQ</option><option>MNQ</option></select>
     <select id="rf-dir" onchange="renderReports()"><option value="">All directions</option><option>Long</option><option>Short</option></select>
     <select id="rf-mc" onchange="renderReports()"><option value="">All contexts</option><option>Buying continuation</option><option>Selling continuation</option><option>Chop</option></select>
@@ -453,7 +453,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     <input type="date" id="af-from" onchange="renderAn()" title="From date">
     <input type="date" id="af-to" onchange="renderAn()" title="To date">
     <select id="af-se" onchange="renderAn()"><option value="">All sessions</option><option>NY</option><option>Asia</option><option>London</option></select>
-    <select id="af-ac" onchange="renderAn()"><option value="">All accounts</option><option>Paper</option><option>Prop - Tradeify</option><option>Prop - Topstep</option><option>Prop - TPT</option><option>Prop - Lucid</option><option>Personal</option></select>
+    <input type="text" id="af-ac" placeholder="Filter by account..." oninput="renderAn()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:'Syne',sans-serif;width:160px;">
     <select id="af-inst" onchange="renderAn()"><option value="">All instruments</option><option>ES</option><option>MES</option><option>NQ</option><option>MNQ</option></select>
     <button class="btn" onclick="clearAnFilters()" style="padding:6px 12px;font-size:12px">Clear</button>
   </div>
@@ -1110,7 +1110,7 @@ function filteredTrades(){
   if(from) data=data.filter(t=>new Date(t.date.split('/').length===3?t.date.split('/')[2]+'-'+t.date.split('/')[0]+'-'+t.date.split('/')[1]:t.date)>=new Date(from));
   if(to) data=data.filter(t=>new Date(t.date.split('/').length===3?t.date.split('/')[2]+'-'+t.date.split('/')[0]+'-'+t.date.split('/')[1]:t.date)<=new Date(to));
   if(se) data=data.filter(t=>t.session===se);
-  if(ac) data=data.filter(t=>t.account===ac);
+  if(ac) data=data.filter(t=>t.account&&t.account.toLowerCase().includes(ac.toLowerCase()));
   if(inst) data=data.filter(t=>t.inst===inst);
   if(dir) data=data.filter(t=>t.dir===dir);
   if(mc) data=data.filter(t=>t.mc===mc);
@@ -1297,7 +1297,8 @@ function editSelected(){
 }
 function clearFilters(){
   ['rf-from','rf-to'].forEach(id=>{document.getElementById(id).value='';});
-  ['rf-se','rf-ac','rf-inst','rf-dir','rf-mc','rf-ex','rf-gr'].forEach(id=>{document.getElementById(id).value='';});
+  ['rf-se','rf-inst','rf-dir','rf-mc','rf-ex','rf-gr'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('rf-ac').value='';
   document.querySelectorAll('.ms-panel input[type=checkbox]').forEach(cb=>cb.checked=false);
   document.querySelectorAll('.ms-btn').forEach(b=>{b.className='ms-btn';});
   document.getElementById('ms-setup-btn').textContent='Setup ▾';
@@ -1315,14 +1316,15 @@ function getAnData(){
   const inst=document.getElementById('af-inst')?.value;
   if(from) data=data.filter(t=>new Date(t.date.split('/').length===3?t.date.split('/')[2]+'-'+t.date.split('/')[0]+'-'+t.date.split('/')[1]:t.date)>=new Date(from));
   if(to) data=data.filter(t=>new Date(t.date.split('/').length===3?t.date.split('/')[2]+'-'+t.date.split('/')[0]+'-'+t.date.split('/')[1]:t.date)<=new Date(to));
-  if(ac) data=data.filter(t=>t.account===ac);
+  if(ac) data=data.filter(t=>t.account&&t.account.toLowerCase().includes(ac.toLowerCase()));
   if(afse) data=data.filter(t=>t.session===afse);
-  if(afac) data=data.filter(t=>t.account===afac);
+  if(afac) data=data.filter(t=>t.account&&t.account.toLowerCase().includes(afac.toLowerCase()));
   if(inst) data=data.filter(t=>t.inst===inst);
   return data;
 }
 function clearAnFilters(){
-  ['af-from','af-to','af-se','af-ac','af-inst'].forEach(id=>{document.getElementById(id).value='';});
+  ['af-from','af-to','af-se','af-inst'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('af-ac').value='';
   renderAn();
 }
 
