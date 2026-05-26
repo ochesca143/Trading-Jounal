@@ -144,6 +144,19 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
 
 <!-- OVERVIEW -->
 <div id="sec-overview" class="section active">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+    <div>
+      <div class="ptitle">Overview</div>
+      <div class="psub" id="ov-period-label">All time</div>
+    </div>
+    <select id="ov-period" onchange="renderOv()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 16px;font-size:13px;font-family:'Syne',sans-serif;cursor:pointer;font-weight:500;">
+      <option value="today">Today</option>
+      <option value="week">This week</option>
+      <option value="month">This month</option>
+      <option value="ytd">Year to date</option>
+      <option value="all" selected>All time</option>
+    </select>
+  </div>
   <div id="ov"></div>
 </div>
 
@@ -940,7 +953,41 @@ function clearF(){
 
 // ── OVERVIEW ─────────────────────────────────────────────────────────────────
 function renderOv(){
-  const withPnl=T.filter(t=>t.pnl!=null);
+  // Get period filter
+  const period=document.getElementById('ov-period')?.value||'all';
+  const now=new Date();
+  const label=document.getElementById('ov-period-label');
+
+  function parseDate(str){
+    if(!str)return null;
+    const parts=str.split('/');
+    if(parts.length===3)return new Date(parts[2],parts[0]-1,parts[1]);
+    return new Date(str);
+  }
+
+  function inPeriod(t){
+    const d=parseDate(t.date);
+    if(!d||isNaN(d))return true;
+    if(period==='today'){
+      return d.toDateString()===now.toDateString();
+    } else if(period==='week'){
+      const startOfWeek=new Date(now);
+      startOfWeek.setDate(now.getDate()-now.getDay()+1); // Monday
+      startOfWeek.setHours(0,0,0,0);
+      return d>=startOfWeek;
+    } else if(period==='month'){
+      return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+    } else if(period==='ytd'){
+      return d.getFullYear()===now.getFullYear();
+    }
+    return true;
+  }
+
+  const periodLabels={today:'Today',week:'This week',month:'This month',ytd:'Year to date',all:'All time'};
+  if(label) label.textContent=periodLabels[period]||'All time';
+
+  const T_filtered=T.filter(inPeriod);
+  const withPnl=T_filtered.filter(t=>t.pnl!=null);
   const wins=withPnl.filter(t=>t.pnl>0);
   const losses=withPnl.filter(t=>t.pnl<=0);
   const wr=withPnl.length?wins.length/withPnl.length:0;
@@ -948,7 +995,7 @@ function renderOv(){
   const avgWin=wins.length?wins.reduce((a,t)=>a+t.pnl,0)/wins.length:0;
   const avgLoss=losses.length?Math.abs(losses.reduce((a,t)=>a+t.pnl,0)/losses.length):0;
   const expectancy=parseFloat((wr*avgWin-(1-wr)*avgLoss).toFixed(2));
-  const rrVals=T.filter(t=>t.rr!=null).map(t=>t.rr);
+  const rrVals=T_filtered.filter(t=>t.rr!=null).map(t=>t.rr);
   const avgRR=rrVals.length?parseFloat((rrVals.reduce((a,b)=>a+b,0)/rrVals.length).toFixed(2)):null;
   const totalPts=withPnl.reduce((a,t)=>a+t.pnl,0);
   const sorted=[...withPnl].sort((a,b)=>a.id-b.id);
@@ -957,7 +1004,7 @@ function renderOv(){
 
   // Build daily P&L map for calendar
   const dayMap={};
-  T.forEach(t=>{
+  T_filtered.forEach(t=>{
     if(!t.date)return;
     const d=t.date;
     if(!dayMap[d])dayMap[d]={pnl:0,wins:0,total:0};
@@ -968,7 +1015,7 @@ function renderOv(){
 
   // Get months from trades + current month
   const monthSet=new Set();
-  T.forEach(t=>{
+  T_filtered.forEach(t=>{
     if(t.date){
       const parts=t.date.split('/');
       if(parts.length===3){
@@ -979,7 +1026,6 @@ function renderOv(){
       }
     }
   });
-  const now=new Date();
   monthSet.add(now.getFullYear()+'-'+(now.getMonth()+1));
   const months=[...monthSet].sort().slice(-3);
 
@@ -1060,11 +1106,11 @@ function renderOv(){
         </div>`}
       </div>
       <div>
-        ${T.length>=3?`<div class="g2" style="margin-bottom:0">
+        ${T_filtered.length>=3?`<div class="g2" style="margin-bottom:0">
           <div class="card">
             <div class="ctitle">By execution</div>
             ${['Executed to plan','Hesitated','No valid setup'].map(k=>{
-              const g=T.filter(t=>t.exec===k&&t.pnl!=null);const gw=g.filter(t=>t.pnl>0);const wr2=g.length?Math.round(gw.length/g.length*100):0;
+              const g=T_filtered.filter(t=>t.exec===k&&t.pnl!=null);const gw=g.filter(t=>t.pnl>0);const wr2=g.length?Math.round(gw.length/g.length*100):0;
               const col=k==='Executed to plan'?'#2dd4a0':k==='Hesitated'?'#f0b84a':'#f05a5a';
               return '<div class="arow"><span class="alabel">'+k+'</span><div class="prog"><div class="prog-fill" style="width:'+wr2+'%;background:'+col+'"></div></div><span class="apct" style="color:'+col+'">'+wr2+'%</span><span class="acnt">'+g.length+'t</span></div>';
             }).join('')}
@@ -1072,7 +1118,7 @@ function renderOv(){
           <div class="card">
             <div class="ctitle">By market context</div>
             ${['Buying continuation','Selling continuation','Chop'].map(k=>{
-              const g=T.filter(t=>t.mc===k&&t.pnl!=null);const gw=g.filter(t=>t.pnl>0);const wr2=g.length?Math.round(gw.length/g.length*100):0;
+              const g=T_filtered.filter(t=>t.mc===k&&t.pnl!=null);const gw=g.filter(t=>t.pnl>0);const wr2=g.length?Math.round(gw.length/g.length*100):0;
               const col=wr2>=60?'#2dd4a0':wr2>=40?'#f0b84a':'#f05a5a';
               return '<div class="arow"><span class="alabel">'+k+'</span><div class="prog"><div class="prog-fill" style="width:'+wr2+'%;background:'+col+'"></div></div><span class="apct" style="color:'+col+'">'+wr2+'%</span><span class="acnt">'+g.length+'t</span></div>';
             }).join('')}
