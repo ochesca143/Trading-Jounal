@@ -144,19 +144,6 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
 
 <!-- OVERVIEW -->
 <div id="sec-overview" class="section active">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
-    <div>
-      <div class="ptitle">Overview</div>
-      <div class="psub" id="ov-period-label">All time</div>
-    </div>
-    <select id="ov-period" onchange="renderOv()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 16px;font-size:13px;font-family:'Syne',sans-serif;cursor:pointer;font-weight:500;">
-      <option value="today">Today</option>
-      <option value="week">This week</option>
-      <option value="month">This month</option>
-      <option value="ytd">Year to date</option>
-      <option value="all" selected>All time</option>
-    </select>
-  </div>
   <div id="ov"></div>
 </div>
 
@@ -1081,7 +1068,19 @@ function renderOv(){
   }
 
   document.getElementById('ov').innerHTML=`
-    <div style="margin-bottom:2rem"><div class="ptitle">Overview</div><div class="psub">Live as you log</div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem">
+      <div>
+        <div class="ptitle">Overview</div>
+        <div class="psub" id="ov-period-label" style="margin-bottom:0">All time</div>
+      </div>
+      <select id="ov-period" onchange="renderOv()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 16px;font-size:13px;font-family:'Syne',sans-serif;cursor:pointer;font-weight:500;">
+        <option value="today">Today</option>
+        <option value="week">This week</option>
+        <option value="month">This month</option>
+        <option value="ytd">Year to date</option>
+        <option value="all" selected>All time</option>
+      </select>
+    </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:1.5rem">
       <div class="metric" style="padding:1.5rem 1.75rem">
