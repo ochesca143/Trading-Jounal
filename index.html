@@ -311,7 +311,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     <input type="date" id="rf-from" onchange="renderReports()" title="From date">
     <input type="date" id="rf-to" onchange="renderReports()" title="To date">
     <select id="rf-se" onchange="renderReports()"><option value="">All sessions</option><option>NY</option><option>Asia</option><option>London</option></select>
-    <input type="text" id="rf-ac" placeholder="Filter by account..." oninput="renderReports()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:'Syne',sans-serif;width:160px;">
+    <select id="rf-ac" onchange="renderReports()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:'Syne',sans-serif;"><option value="">All accounts</option></select>
     <select id="rf-inst" onchange="renderReports()"><option value="">All instruments</option><option>ES</option><option>MES</option><option>NQ</option><option>MNQ</option></select>
     <select id="rf-dir" onchange="renderReports()"><option value="">All directions</option><option>Long</option><option>Short</option></select>
     <select id="rf-mc" onchange="renderReports()"><option value="">All contexts</option><option>Buying continuation</option><option>Selling continuation</option><option>Chop</option></select>
@@ -434,6 +434,12 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
   </div>
 
   <div class="card">
+    <div class="ctitle">Manage accounts</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1.25rem">Accounts are saved automatically when you log a trade. Delete any you no longer need.</p>
+    <div id="ac-list-manage"></div>
+  </div>
+
+  <div class="card">
     <div class="ctitle">Backup & restore</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:1.25rem">Export all your trades as a CSV file you can store safely. Import it back any time to restore your data.</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -453,7 +459,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     <input type="date" id="af-from" onchange="renderAn()" title="From date">
     <input type="date" id="af-to" onchange="renderAn()" title="To date">
     <select id="af-se" onchange="renderAn()"><option value="">All sessions</option><option>NY</option><option>Asia</option><option>London</option></select>
-    <input type="text" id="af-ac" placeholder="Filter by account..." oninput="renderAn()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:'Syne',sans-serif;width:160px;">
+    <select id="af-ac" onchange="renderAn()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:'Syne',sans-serif;"><option value="">All accounts</option></select>
     <select id="af-inst" onchange="renderAn()"><option value="">All instruments</option><option>ES</option><option>MES</option><option>NQ</option><option>MNQ</option></select>
     <button class="btn" onclick="clearAnFilters()" style="padding:6px 12px;font-size:12px">Clear</button>
   </div>
@@ -582,7 +588,7 @@ function go(id,el){
   if(id==='overview')renderOv();
   if(id==='reports')renderReports();
   if(id==='analytics')renderAn();
-  if(id==='settings')initSettings();
+  if(id==='settings'){initSettings();renderAcManage();}
   updateFooter();
 }
 
@@ -887,7 +893,7 @@ function saveT(){
     notes:document.getElementById('td-nt').value,
     img:imgB64||null
   };
-  if(t.account)saveAcToHistory(t.account);
+  if(t.account){saveAcToHistory(t.account);populateAcDropdowns();}
   T.push(t);save();
   syncToSheets('save',{trade:t});
   clearF();
@@ -1110,7 +1116,7 @@ function filteredTrades(){
   if(from) data=data.filter(t=>new Date(t.date.split('/').length===3?t.date.split('/')[2]+'-'+t.date.split('/')[0]+'-'+t.date.split('/')[1]:t.date)>=new Date(from));
   if(to) data=data.filter(t=>new Date(t.date.split('/').length===3?t.date.split('/')[2]+'-'+t.date.split('/')[0]+'-'+t.date.split('/')[1]:t.date)<=new Date(to));
   if(se) data=data.filter(t=>t.session===se);
-  if(ac) data=data.filter(t=>t.account&&t.account.toLowerCase().includes(ac.toLowerCase()));
+  if(ac) data=data.filter(t=>t.account===ac);
   if(inst) data=data.filter(t=>t.inst===inst);
   if(dir) data=data.filter(t=>t.dir===dir);
   if(mc) data=data.filter(t=>t.mc===mc);
@@ -1297,8 +1303,7 @@ function editSelected(){
 }
 function clearFilters(){
   ['rf-from','rf-to'].forEach(id=>{document.getElementById(id).value='';});
-  ['rf-se','rf-inst','rf-dir','rf-mc','rf-ex','rf-gr'].forEach(id=>{document.getElementById(id).value='';});
-  document.getElementById('rf-ac').value='';
+  ['rf-se','rf-ac','rf-inst','rf-dir','rf-mc','rf-ex','rf-gr'].forEach(id=>{document.getElementById(id).value='';}); populateAcDropdowns();
   document.querySelectorAll('.ms-panel input[type=checkbox]').forEach(cb=>cb.checked=false);
   document.querySelectorAll('.ms-btn').forEach(b=>{b.className='ms-btn';});
   document.getElementById('ms-setup-btn').textContent='Setup ▾';
@@ -1316,15 +1321,14 @@ function getAnData(){
   const inst=document.getElementById('af-inst')?.value;
   if(from) data=data.filter(t=>new Date(t.date.split('/').length===3?t.date.split('/')[2]+'-'+t.date.split('/')[0]+'-'+t.date.split('/')[1]:t.date)>=new Date(from));
   if(to) data=data.filter(t=>new Date(t.date.split('/').length===3?t.date.split('/')[2]+'-'+t.date.split('/')[0]+'-'+t.date.split('/')[1]:t.date)<=new Date(to));
-  if(ac) data=data.filter(t=>t.account&&t.account.toLowerCase().includes(ac.toLowerCase()));
+  if(ac) data=data.filter(t=>t.account===ac);
   if(afse) data=data.filter(t=>t.session===afse);
-  if(afac) data=data.filter(t=>t.account&&t.account.toLowerCase().includes(afac.toLowerCase()));
+  if(afac) data=data.filter(t=>t.account===afac);
   if(inst) data=data.filter(t=>t.inst===inst);
   return data;
 }
 function clearAnFilters(){
-  ['af-from','af-to','af-se','af-inst'].forEach(id=>{document.getElementById(id).value='';});
-  document.getElementById('af-ac').value='';
+  ['af-from','af-to','af-se','af-ac','af-inst'].forEach(id=>{document.getElementById(id).value='';}); populateAcDropdowns();
   renderAn();
 }
 
@@ -1517,6 +1521,31 @@ function saveBulkEdit(){
 }
 
 // ── ACCOUNT AUTOCOMPLETE ──────────────────────────────────────────────────────
+function renderAcManage(){
+  const el=document.getElementById('ac-list-manage');
+  if(!el)return;
+  const list=getAcHistory();
+  if(!list.length){el.innerHTML='<div style="font-size:13px;color:var(--hint)">No accounts saved yet. They appear here after you log your first trade.</div>';return;}
+  el.innerHTML=list.map(a=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bs);font-size:13px;">
+    <span style="color:var(--text)">${a}</span>
+    <button onclick="deleteAccount('${a.replace(/'/g,"\'")}');renderAcManage();" style="background:none;border:1px solid var(--rbr);color:var(--red);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;">Delete</button>
+  </div>`).join('');
+}
+function populateAcDropdowns(){
+  const history=getAcHistory();
+  ['rf-ac','af-ac'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel)return;
+    const cur=sel.value;
+    sel.innerHTML='<option value="">All accounts</option>'+history.map(a=>`<option value="${a}">${a}</option>`).join('');
+    if(cur)sel.value=cur;
+  });
+}
+function deleteAccount(name){
+  let list=getAcHistory().filter(a=>a!==name);
+  try{localStorage.setItem('tj_accounts',JSON.stringify(list));}catch(e){}
+  populateAcDropdowns();
+}
 function getAcHistory(){
   try{return JSON.parse(localStorage.getItem('tj_accounts')||'[]');}catch(e){return[];}
 }
@@ -1549,6 +1578,7 @@ function hideAcList(listId){
 // ── INIT ──────────────────────────────────────────────────────────────────────
 // Modals are in DOM above script tag so direct binding works
 document.getElementById('edit-modal').onclick=function(e){if(e.target===this)closeEdit();};
+  populateAcDropdowns();
 document.getElementById('bulk-modal').onclick=function(e){if(e.target===this)closeBulkEdit();};
 updateFooter();
 renderOv();
