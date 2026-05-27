@@ -513,7 +513,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
       <div class="tg" id="bed-su"><span class="tag" onclick="st(this,'bed-su')">Head & Shoulders</span><span class="tag" onclick="st(this,'bed-su')">Cup & Handle</span><span class="tag" onclick="st(this,'bed-su')">ZOMI</span><span class="tag" onclick="st(this,'bed-su','a')">Thin structure</span></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Execution</label>
-      <div class="tg" id="bed-ex"><span class="tag" onclick="st(this,'bed-ex','g')">Executed to plan</span><span class="tag" onclick="st(this,'bed-ex','a')">Hesitated</span><span class="tag" onclick="st(this,'bed-ex','r')">No valid setup</span></div>
+      <div class="tg" id="bed-ex"><span class="tag" onclick="st(this,'bed-ex','g')">Executed to plan</span><span class="tag" onclick="st(this,'bed-ex','a')">Hesitated</span><span class="tag" onclick="st(this,'bed-ex','a')">Not planned</span><span class="tag" onclick="st(this,'bed-ex','r')">No valid setup</span></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Protected?</label>
       <div class="tg" id="bed-pr"><span class="tag" onclick="st(this,'bed-pr','g')">Yes</span><span class="tag" onclick="st(this,'bed-pr','r')">No</span><span class="tag" onclick="st(this,'bed-pr','a')">N/A</span></div>
@@ -583,7 +583,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
       <div class="fg"><label>R multiple</label><input type="number" id="ed-rr" step="0.25"></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Execution</label>
-      <div class="tg" id="ed-ex"><span class="tag" onclick="st(this,'ed-ex','g')">Executed to plan</span><span class="tag" onclick="st(this,'ed-ex','a')">Hesitated</span><span class="tag" onclick="st(this,'ed-ex','r')">No valid setup</span></div>
+      <div class="tg" id="ed-ex"><span class="tag" onclick="st(this,'ed-ex','g')">Executed to plan</span><span class="tag" onclick="st(this,'ed-ex','a')">Hesitated</span><span class="tag" onclick="st(this,'ed-ex','a')">Not planned</span><span class="tag" onclick="st(this,'ed-ex','r')">No valid setup</span></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Protected?</label>
       <div class="tg" id="ed-pr"><span class="tag" onclick="st(this,'ed-pr','g')">Yes</span><span class="tag" onclick="st(this,'ed-pr','r')">No</span><span class="tag" onclick="st(this,'ed-pr','a')">N/A</span></div>
@@ -1129,7 +1129,7 @@ function renderOv(){
         ${T_filtered.length>=3?`<div class="g2" style="margin-bottom:0">
           <div class="card">
             <div class="ctitle">By execution</div>
-            ${['Executed to plan','Hesitated','No valid setup'].map(k=>{
+            ${['Executed to plan','Hesitated','Not planned','No valid setup'].map(k=>{
               const g=T_filtered.filter(t=>t.exec===k&&t.pnl!=null);const gw=g.filter(t=>t.pnl>0);const wr2=g.length?Math.round(gw.length/g.length*100):0;
               const col=k==='Executed to plan'?'#2dd4a0':k==='Hesitated'?'#f0b84a':'#f05a5a';
               return '<div class="arow"><span class="alabel">'+k+'</span><div class="prog"><div class="prog-fill" style="width:'+wr2+'%;background:'+col+'"></div></div><span class="apct" style="color:'+col+'">'+wr2+'%</span><span class="acnt">'+g.length+'t</span></div>';
@@ -1503,7 +1503,7 @@ function renderAn(){
     <div class="g2">
       <div class="card">
         <div class="ctitle">By execution</div>
-        ${['Executed to plan','Hesitated','No valid setup'].map(k=>{
+        ${['Executed to plan','Hesitated','Not planned','No valid setup'].map(k=>{
           const g=data.filter(t=>t.exec===k&&t.pnl!=null);const gw=g.filter(t=>t.pnl>0);const wr2=g.length?Math.round(gw.length/g.length*100):0;
           const col=k==='Executed to plan'?'#2dd4a0':k==='Hesitated'?'#f0b84a':'#f05a5a';
           const pts=g.reduce((a,t)=>a+t.pnl,0);
