@@ -218,6 +218,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
             <span class="tag" onclick="st(this,'td-mc','g')">Buying continuation</span>
             <span class="tag" onclick="st(this,'td-mc','r')">Selling continuation</span>
             <span class="tag" onclick="st(this,'td-mc','a')">Chop</span>
+          <span class="tag" onclick="st(this,'td-mc','a')">Lack of continuation</span>
           </div>
         </div>
         <div class="fg" style="margin-bottom:12px"><label>Setup</label>
@@ -252,6 +253,8 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
             <span class="tag" onclick="mt(this)">VAH</span>
             <span class="tag" onclick="mt(this)">VAL</span>
             <span class="tag" onclick="mt(this)">POC</span>
+            <span class="tag" onclick="mt(this)">HOD</span>
+            <span class="tag" onclick="mt(this)">LOD</span>
             <span class="tag" onclick="mt(this,'a')">Early</span>
             <span class="tag" onclick="mt(this,'a')">Late</span>
             <span class="tag" onclick="mt(this,'r')">Chased / FOMO</span>
@@ -327,7 +330,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     <select id="rf-ac" onchange="renderReports()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:'Syne',sans-serif;"><option value="">All accounts</option></select>
     <select id="rf-inst" onchange="renderReports()"><option value="">All instruments</option><option>ES</option><option>MES</option><option>NQ</option><option>MNQ</option></select>
     <select id="rf-dir" onchange="renderReports()"><option value="">All directions</option><option>Long</option><option>Short</option></select>
-    <select id="rf-mc" onchange="renderReports()"><option value="">All contexts</option><option>Buying continuation</option><option>Selling continuation</option><option>Chop</option></select>
+    <select id="rf-mc" onchange="renderReports()"><option value="">All contexts</option><option>Buying continuation</option><option>Selling continuation</option><option>Chop</option><option>Lack of continuation</option></select>
     <select id="rf-ex" onchange="renderReports()"><option value="">All executions</option><option>Executed to plan</option><option>Hesitated</option><option>No valid setup</option></select>
     <select id="rf-gr" onchange="renderReports()"><option value="">All grades</option><option>S</option><option>A</option><option>B</option><option>C</option><option>D</option></select>
     <!-- Multi-select: Setup -->
@@ -366,6 +369,8 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
         <label><input type="checkbox" value="VAH" onchange="renderReports()"> VAH</label>
         <label><input type="checkbox" value="VAL" onchange="renderReports()"> VAL</label>
         <label><input type="checkbox" value="POC" onchange="renderReports()"> POC</label>
+        <label><input type="checkbox" value="HOD" onchange="renderReports()"> HOD</label>
+        <label><input type="checkbox" value="LOD" onchange="renderReports()"> LOD</label>
         <label><input type="checkbox" value="Early" onchange="renderReports()"> Early</label>
         <label><input type="checkbox" value="Late" onchange="renderReports()"> Late</label>
         <label><input type="checkbox" value="Chased / FOMO" onchange="renderReports()"> Chased / FOMO</label>
@@ -508,7 +513,7 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
     <div class="modal-title">Bulk edit — <span id="bulk-count" style="color:var(--acc)"></span></div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:1.5rem">Only fields you select will be updated. Unselected fields stay as-is on each trade.</p>
     <div class="fg" style="margin-bottom:12px"><label>Market context</label>
-      <div class="tg" id="bed-mc"><span class="tag" onclick="st(this,'bed-mc','g')">Buying continuation</span><span class="tag" onclick="st(this,'bed-mc','r')">Selling continuation</span><span class="tag" onclick="st(this,'bed-mc','a')">Chop</span></div>
+      <div class="tg" id="bed-mc"><span class="tag" onclick="st(this,'bed-mc','g')">Buying continuation</span><span class="tag" onclick="st(this,'bed-mc','r')">Selling continuation</span><span class="tag" onclick="st(this,'bed-mc','a')">Chop</span><span class="tag" onclick="st(this,'bed-mc','a')">Lack of continuation</span></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Setup</label>
       <div class="tg" id="bed-su"><span class="tag" onclick="st(this,'bed-su')">Head & Shoulders</span><span class="tag" onclick="st(this,'bed-su')">Cup & Handle</span><span class="tag" onclick="st(this,'bed-su')">ZOMI</span><span class="tag" onclick="st(this,'bed-su','a')">Thin structure</span></div>
@@ -565,14 +570,14 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
       <div class="tg" id="ed-dr"><span class="tag" onclick="st(this,'ed-dr','g')">Long</span><span class="tag" onclick="st(this,'ed-dr','r')">Short</span></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Market context</label>
-      <div class="tg" id="ed-mc"><span class="tag" onclick="st(this,'ed-mc','g')">Buying continuation</span><span class="tag" onclick="st(this,'ed-mc','r')">Selling continuation</span><span class="tag" onclick="st(this,'ed-mc','a')">Chop</span></div>
+      <div class="tg" id="ed-mc"><span class="tag" onclick="st(this,'ed-mc','g')">Buying continuation</span><span class="tag" onclick="st(this,'ed-mc','r')">Selling continuation</span><span class="tag" onclick="st(this,'ed-mc','a')">Chop</span><span class="tag" onclick="st(this,'ed-mc','a')">Lack of continuation</span></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Setup</label>
       <div class="tg" id="ed-su"><span class="tag" onclick="st(this,'ed-su')">Head & Shoulders</span><span class="tag" onclick="st(this,'ed-su')">Cup & Handle</span><span class="tag" onclick="st(this,'ed-su')">ZOMI</span><span class="tag" onclick="st(this,'ed-su','a')">Thin structure</span></div>
     </div>
     <div class="fg" style="margin-bottom:12px"><label>Entry criteria <span style="font-size:10px;color:var(--hint);font-weight:400;text-transform:none">(select all that apply)</span></label>
       <div class="tg" id="ed-en">
-        <span class="tag" onclick="mt(this)">Liquidity building algo</span><span class="tag" onclick="mt(this)">Control algo</span><span class="tag" onclick="mt(this)">Precision algo</span><span class="tag" onclick="mt(this)">Break & retest</span><span class="tag" onclick="mt(this)">Break of</span><span class="tag" onclick="mt(this)">Re-entry</span><span class="tag" onclick="mt(this)">Good fill</span><span class="tag" onclick="mt(this,'r')">Bad fill</span><span class="tag" onclick="mt(this)">Wedge</span><span class="tag" onclick="mt(this)">Micro-structure</span><span class="tag" onclick="mt(this)">5 DMA</span><span class="tag" onclick="mt(this)">20 DMA</span><span class="tag" onclick="mt(this)">Left shoulder S/R</span><span class="tag" onclick="mt(this)">Strong resistance</span><span class="tag" onclick="mt(this)">Strong support</span><span class="tag" onclick="mt(this)">Ascending wedge</span><span class="tag" onclick="mt(this)">Descending wedge</span><span class="tag" onclick="mt(this,'g')">Volume spike</span><span class="tag" onclick="mt(this,'r')">Low volume</span><span class="tag" onclick="mt(this)">VAH</span><span class="tag" onclick="mt(this)">VAL</span><span class="tag" onclick="mt(this)">POC</span><span class="tag" onclick="mt(this,'a')">Early</span><span class="tag" onclick="mt(this,'a')">Late</span><span class="tag" onclick="mt(this,'r')">Chased / FOMO</span>
+        <span class="tag" onclick="mt(this)">Liquidity building algo</span><span class="tag" onclick="mt(this)">Control algo</span><span class="tag" onclick="mt(this)">Precision algo</span><span class="tag" onclick="mt(this)">Break & retest</span><span class="tag" onclick="mt(this)">Break of</span><span class="tag" onclick="mt(this)">Re-entry</span><span class="tag" onclick="mt(this)">Good fill</span><span class="tag" onclick="mt(this,'r')">Bad fill</span><span class="tag" onclick="mt(this)">Wedge</span><span class="tag" onclick="mt(this)">Micro-structure</span><span class="tag" onclick="mt(this)">5 DMA</span><span class="tag" onclick="mt(this)">20 DMA</span><span class="tag" onclick="mt(this)">Left shoulder S/R</span><span class="tag" onclick="mt(this)">Strong resistance</span><span class="tag" onclick="mt(this)">Strong support</span><span class="tag" onclick="mt(this)">Ascending wedge</span><span class="tag" onclick="mt(this)">Descending wedge</span><span class="tag" onclick="mt(this,'g')">Volume spike</span><span class="tag" onclick="mt(this,'r')">Low volume</span><span class="tag" onclick="mt(this)">VAH</span><span class="tag" onclick="mt(this)">VAL</span><span class="tag" onclick="mt(this)">POC</span><span class="tag" onclick="mt(this)">HOD</span><span class="tag" onclick="mt(this)">LOD</span><span class="tag" onclick="mt(this,'a')">Early</span><span class="tag" onclick="mt(this,'a')">Late</span><span class="tag" onclick="mt(this,'r')">Chased / FOMO</span>
       </div>
     </div>
     <div class="g2" style="gap:10px;margin-bottom:12px">
@@ -1138,7 +1143,7 @@ function renderOv(){
           </div>
           <div class="card">
             <div class="ctitle">By market context</div>
-            ${['Buying continuation','Selling continuation','Chop'].map(k=>{
+            ${['Buying continuation','Selling continuation','Chop','Lack of continuation'].map(k=>{
               const g=T_filtered.filter(t=>t.mc===k&&t.pnl!=null);const gw=g.filter(t=>t.pnl>0);const wr2=g.length?Math.round(gw.length/g.length*100):0;
               const col=wr2>=60?'#2dd4a0':wr2>=40?'#f0b84a':'#f05a5a';
               return '<div class="arow"><span class="alabel">'+k+'</span><div class="prog"><div class="prog-fill" style="width:'+wr2+'%;background:'+col+'"></div></div><span class="apct" style="color:'+col+'">'+wr2+'%</span><span class="acnt">'+g.length+'t</span></div>';
