@@ -420,11 +420,11 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
 var CLAUDE_API_KEY = ''; // Set this to your Claude API key
 
 function rowFromTrade(t) {
-  const entry = Array.isArray(t.entry) ? t.entry.join(', ') : (t.entry || '');
+  const entry = (t && Array.isArray(t.entry)) ? t.entry.join(', ') : ((t && t.entry) || '');
   return [
-    t.id, t.date, t.time, t.lb, t.account, t.session, t.inst, t.dir, t.mc, t.setup,
-    entry, t.ss, t.contracts, t.pnl, t.rr,
-    t.exec, t.protected, t.grade, t.notes
+    t.id || '', t.date || '', t.time || '', t.lb || '', t.account || '', t.session || '', t.inst || '', t.dir || '', t.mc || '', t.setup || '',
+    entry, (t.ss !== undefined && t.ss !== null) ? t.ss : '', (t.contracts !== undefined && t.contracts !== null) ? t.contracts : '', (t.pnl !== undefined && t.pnl !== null) ? t.pnl : '', (t.rr !== undefined && t.rr !== null) ? t.rr : '',
+    t.exec || '', t.protected || '', t.grade || '', t.notes || ''
   ];
 }
 
@@ -715,7 +715,9 @@ Return ONLY valid JSON with these exact keys. If a field is not visible or uncle
 <script>
 let T=[];
 try{T=JSON.parse(localStorage.getItem('tj_v6')||'[]');}catch(e){}
-let imgB64=null,aiT=[],sortCol='date',sortDir=1,selectedIds=new Set();
+const APP_VERSION='v6.3';
+console.log('Trade Journal '+APP_VERSION);
+let imgB64=null,imgMime='image/png',aiT=[],sortCol='date',sortDir=1,selectedIds=new Set();
 let GS_URL='';
 try{GS_URL=localStorage.getItem('tj_gs_url')||'';}catch(e){}
 
@@ -976,6 +978,7 @@ function processImg(file){
   const r=new FileReader();
   r.onload=ev=>{
     imgB64=ev.target.result.split(',')[1];
+    imgMime=file.type||'image/png';
     const p=document.getElementById('imgprev');
     p.src=ev.target.result;p.style.display='block';
     const zone=document.getElementById('pastezone');
@@ -1001,11 +1004,13 @@ async function analyzeChart(b64){
   try{
     const resp=await fetch(GS_URL,{
       method:'POST',
-      body:JSON.stringify({action:'analyze',imageBase64:b64}),
+      body:JSON.stringify({action:'analyze',imageBase64:b64,mediaType:imgMime}),
       headers:{'Content-Type':'text/plain'}
     });
     clearInterval(iv);bar.style.display='none';
-    const data=await resp.json();
+    const text=await resp.text();
+    console.log('Apps Script response:',text);
+    const data=JSON.parse(text);
     if(!data.ok){throw new Error(data.error||'Unknown error');}
     const extracted=data.extracted||{};
     aiT=[{
@@ -1022,7 +1027,8 @@ async function analyzeChart(b64){
   }catch(err){
     clearInterval(iv);bar.style.display='none';
     document.getElementById('aibox').style.display='block';
-    document.getElementById('ailist').innerHTML=`<p style="font-size:12px;color:var(--red)">Error: ${err.message}. Check your Apps Script URL and Claude API key in the script.</p>`;
+    document.getElementById('ailist').innerHTML=`<p style="font-size:12px;color:var(--red)">[${APP_VERSION}] Error: ${err.message}. Open browser console (F12) for details.</p>`;
+    console.error('Full error:',err);
   }
 }
 
