@@ -721,27 +721,58 @@ function exportCSV(){
 }
 
 // ── IMPORT CSV ────────────────────────────────────────────────────────────────
+function parseCSVLine(line){
+  const result=[];
+  let cur='',inQuotes=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(inQuotes){
+      if(ch==='"'){
+        if(line[i+1]==='"'){cur+='"';i++;}
+        else{inQuotes=false;}
+      } else {
+        cur+=ch;
+      }
+    } else {
+      if(ch==='"'){inQuotes=true;}
+      else if(ch===','){result.push(cur);cur='';}
+      else{cur+=ch;}
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
 function importCSV(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=ev=>{
-    const lines=ev.target.result.split('\n').filter(l=>l.trim());
+    const lines=ev.target.result.split(/\r?\n/).filter(l=>l.trim());
     if(lines.length<2){alert('CSV appears empty.');return;}
     const imported=[];
     for(let i=1;i<lines.length;i++){
-      const cols=lines[i].match(/(".*?"|[^,]+)(?=,|$)/g)||[];
-      const clean=cols.map(c=>c.replace(/^"|"$/g,'').replace(/""/g,'"'));
+      const clean=parseCSVLine(lines[i]);
       if(clean.length<2)continue;
       imported.push({
         id:parseInt(clean[0])||Date.now()+i,
-        date:clean[1]||'',lb:clean[2]||'',inst:clean[3]||'',dir:clean[4]||'',
-        mc:clean[5]||'',setup:clean[6]||'',
-        entry:clean[7]?clean[7].split(';').map(s=>s.trim()).filter(Boolean):[],
-        ss:parseFloat(clean[8])||null,
-        contracts:parseInt(clean[9])||null,
-        pnl:parseFloat(clean[11])||null,rr:parseFloat(clean[12])||null,
-        exec:clean[13]||'',protected:clean[14]||'',grade:clean[15]||'',
-        notes:clean[16]||''
+        date:clean[1]||'',
+        time:clean[2]||'',
+        lb:clean[3]||'',
+        account:clean[4]||'',
+        session:clean[5]||'',
+        inst:clean[6]||'',
+        dir:clean[7]||'',
+        mc:clean[8]||'',
+        setup:clean[9]||'',
+        entry:clean[10]?clean[10].split(';').map(s=>s.trim()).filter(Boolean):[],
+        ss:parseFloat(clean[11])||null,
+        contracts:parseInt(clean[12])||null,
+        pnl:parseFloat(clean[13])||null,
+        rr:parseFloat(clean[14])||null,
+        exec:clean[15]||'',
+        protected:clean[16]||'',
+        grade:clean[17]||'',
+        notes:clean[18]||''
       });
     }
     if(!imported.length){alert('No valid trades found in CSV.');return;}
@@ -1748,7 +1779,7 @@ function renderAcManage(){
   if(!list.length){el.innerHTML='<div style="font-size:13px;color:var(--hint)">No accounts saved yet. They appear here after you log your first trade.</div>';return;}
   el.innerHTML=list.map(a=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bs);font-size:13px;">
     <span style="color:var(--text)">${a}</span>
-    <button onclick="deleteAccount('${a.replace(/'/g,"\'")}');renderAcManage();" style="background:none;border:1px solid var(--rbr);color:var(--red);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;">Delete</button>
+    <button onclick="deleteAccount('${a.replace(/'/g,"\\'")}');renderAcManage();" style="background:none;border:1px solid var(--rbr);color:var(--red);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;">Delete</button>
   </div>`).join('');
 }
 function populateAcDropdowns(){
@@ -1783,7 +1814,7 @@ function showAcSuggestions(inputId,listId){
   const val=input.value.toLowerCase();
   const history=getAcHistory().filter(a=>a.toLowerCase().includes(val));
   if(!history.length){list.style.display='none';return;}
-  list.innerHTML=history.map(a=>`<div onclick="selectAc('${inputId}','${listId}','${a.replace(/'/g,"\'")}')" style="padding:8px 12px;font-size:13px;color:var(--text);cursor:pointer;border-bottom:1px solid var(--bs);" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background=''">${a}</div>`).join('');
+  list.innerHTML=history.map(a=>`<div onclick="selectAc('${inputId}','${listId}','${a.replace(/'/g,"\\'")}')" style="padding:8px 12px;font-size:13px;color:var(--text);cursor:pointer;border-bottom:1px solid var(--bs);" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background=''">${a}</div>`).join('');
   list.style.display='block';
 }
 function selectAc(inputId,listId,val){
