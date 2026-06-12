@@ -715,7 +715,7 @@ Return ONLY valid JSON with these exact keys. If a field is not visible or uncle
 <script>
 let T=[];
 try{T=JSON.parse(localStorage.getItem('tj_v6')||'[]');}catch(e){}
-const APP_VERSION='v6.3';
+const APP_VERSION='v6.4';
 console.log('Trade Journal '+APP_VERSION);
 let imgB64=null,imgMime='image/png',aiT=[],sortCol='date',sortDir=1,selectedIds=new Set();
 let GS_URL='';
@@ -1021,7 +1021,9 @@ async function analyzeChart(b64){
       rr:extracted.rr,
       exec:extracted.exec||'',
       notes:extracted.notes||'',
-      ss:extracted.ss
+      ss:extracted.ss,
+      mc:extracted.mc||'',
+      setup:extracted.setup||''
     }];
     renderAiCards(aiT);
   }catch(err){
@@ -1076,6 +1078,8 @@ function prefill(i){
     const dir=t.direction.toLowerCase();
     setTagByText('td-dr',dir==='long'?'Long':dir==='short'?'Short':'');
   }
+  if(t.mc) setTagByText('td-mc',t.mc);
+  if(t.setup) setTagByText('td-su',t.setup);
 
   // Multi-select entry criteria
   if(t.entry&&t.entry.length){
