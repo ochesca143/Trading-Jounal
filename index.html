@@ -413,39 +413,75 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
       <li>Copy the Web app URL and paste it below</li>
     </ol>
 
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1.25rem;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);line-height:1.8;white-space:pre-wrap;user-select:all" id="apps-script-code">function doPost(e) {
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1.25rem;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);line-height:1.8;white-space:pre-wrap;user-select:all" id="apps-script-code">var HEADERS = ['ID','Date','Time','Label','Account','Session','Instrument','Direction','Context',
+  'Setup','Entry Criteria','Stop Size (pts)','Contracts',
+  'P&L ($)','R','Execution','Protected','Grade','Notes'];
+
+function rowFromTrade(t) {
+  const entry = Array.isArray(t.entry) ? t.entry.join(', ') : (t.entry || '');
+  return [
+    t.id, t.date, t.time, t.lb, t.account, t.session, t.inst, t.dir, t.mc, t.setup,
+    entry, t.ss, t.contracts, t.pnl, t.rr,
+    t.exec, t.protected, t.grade, t.notes
+  ];
+}
+
+function doPost(e) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   const data = JSON.parse(e.postData.contents);
 
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(HEADERS);
+  }
+
   if (data.action === 'save') {
     const t = data.trade;
-    const entry = Array.isArray(t.entry) ? t.entry.join(', ') : (t.entry || '');
-    sheet.appendRow([
-      t.id, t.date, t.lb, t.inst, t.dir, t.mc, t.setup,
-      entry, t.ss, t.contracts, t.pnl, t.rr,
-      t.exec, t.protected, t.grade, t.notes
-    ]);
+    const rows = sheet.getDataRange().getValues();
+    let found = -1;
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]) === String(t.id)) { found = i; break; }
+    }
+    const rowData = rowFromTrade(t);
+    if (found === -1) {
+      sheet.appendRow(rowData);
+    } else {
+      sheet.getRange(found + 1, 1, 1, rowData.length).setValues([rowData]);
+    }
   }
 
   if (data.action === 'delete') {
     const id = data.id;
     const rows = sheet.getDataRange().getValues();
-    for (let i = rows.length - 1; i >= 0; i--) {
+    for (let i = rows.length - 1; i >= 1; i--) {
       if (String(rows[i][0]) === String(id)) {
         sheet.deleteRow(i + 1);
       }
     }
   }
 
-  if (data.action === 'init') {
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow(['ID','Date','Label','Instrument','Direction','Context',
-        'Setup','Entry Criteria','Stop Size (pts)','Contracts',
-        'P&L ($)','R','Execution','Protected','Grade','Notes']);
-    }
-  }
-
   return ContentService.createTextOutput(JSON.stringify({ok:true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const rows = sheet.getDataRange().getValues();
+  const trades = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[0]) continue;
+    trades.push({
+      id: r[0], date: r[1], time: r[2], lb: r[3], account: r[4], session: r[5],
+      inst: r[6], dir: r[7], mc: r[8], setup: r[9],
+      entry: r[10] ? String(r[10]).split(',').map(function(s){return s.trim();}).filter(Boolean) : [],
+      ss: r[11] === '' ? null : r[11],
+      contracts: r[12] === '' ? null : r[12],
+      pnl: r[13] === '' ? null : r[13],
+      rr: r[14] === '' ? null : r[14],
+      exec: r[15], protected: r[16], grade: r[17], notes: r[18]
+    });
+  }
+  return ContentService.createTextOutput(JSON.stringify({ok:true, trades:trades}))
     .setMimeType(ContentService.MimeType.JSON);
 }</div>
 
@@ -474,7 +510,9 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
         Import CSV
         <input type="file" accept=".csv" style="display:none" onchange="importCSV(event)">
       </label>
+      <button class="btn btnp" onclick="syncFromSheets()" style="font-size:13px">Sync from Google Sheets</button>
     </div>
+    <div id="sheets-sync-status" style="font-size:12px;margin-top:10px;display:none"></div>
     <div id="import-status" style="font-size:12px;color:var(--green);margin-top:10px;display:none"></div>
   </div>
 </div>
@@ -700,6 +738,51 @@ async function testSync(){
 function copyScript(){
   const code=document.getElementById('apps-script-code').textContent;
   navigator.clipboard.writeText(code).then(()=>alert('Script copied ✓'));
+}
+
+// ── SYNC FROM SHEETS (pull) ─────────────────────────────────────────────────
+async function syncFromSheets(){
+  const st=document.getElementById('sheets-sync-status');
+  if(!GS_URL){
+    st.style.display='block';st.style.color='var(--red)';
+    st.textContent='⚠ No Apps Script URL set. Add it above first.';
+    return;
+  }
+  st.style.display='block';st.style.color='var(--muted)';st.textContent='Syncing from Google Sheets...';
+  try{
+    const resp=await fetch(GS_URL,{method:'GET'});
+    const data=await resp.json();
+    if(!data.ok)throw new Error(data.error||'Unknown error');
+    const remote=data.trades||[];
+    let added=0,updated=0;
+    remote.forEach(rt=>{
+      // normalize numeric fields
+      const norm={
+        id:parseInt(rt.id),
+        date:rt.date||'',time:rt.time||'',lb:rt.lb||'',account:rt.account||'',
+        session:rt.session||'',inst:rt.inst||'',dir:rt.dir||'',mc:rt.mc||'',setup:rt.setup||'',
+        entry:Array.isArray(rt.entry)?rt.entry:[],
+        ss:rt.ss!=null&&rt.ss!==''?parseFloat(rt.ss):null,
+        contracts:rt.contracts!=null&&rt.contracts!==''?parseInt(rt.contracts):null,
+        pnl:rt.pnl!=null&&rt.pnl!==''?parseFloat(rt.pnl):null,
+        rr:rt.rr!=null&&rt.rr!==''?parseFloat(rt.rr):null,
+        exec:rt.exec||'',protected:rt.protected||'',grade:rt.grade||'',notes:rt.notes||''
+      };
+      if(!norm.id||isNaN(norm.id))return;
+      const idx=T.findIndex(t=>Number(t.id)===norm.id);
+      if(idx===-1){T.push(norm);added++;}
+      else{T[idx]={...T[idx],...norm};updated++;}
+    });
+    save();
+    if(document.getElementById('sec-reports').classList.contains('active'))renderReports();
+    if(document.getElementById('sec-overview').classList.contains('active'))renderOv();
+    if(document.getElementById('sec-analytics').classList.contains('active'))renderAn();
+    st.style.color='var(--green)';
+    st.textContent=`✓ Synced — ${added} new, ${updated} updated (${remote.length} total in sheet)`;
+  }catch(err){
+    st.style.color='var(--red)';
+    st.textContent='✗ Sync failed: '+err.message;
+  }
 }
 
 // ── EXPORT CSV ────────────────────────────────────────────────────────────────
