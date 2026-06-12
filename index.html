@@ -417,6 +417,8 @@ input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;cursor:point
   'Setup','Entry Criteria','Stop Size (pts)','Contracts',
   'P&L ($)','R','Execution','Protected','Grade','Notes'];
 
+var CLAUDE_API_KEY = ''; // Set this to your Claude API key
+
 function rowFromTrade(t) {
   const entry = Array.isArray(t.entry) ? t.entry.join(', ') : (t.entry || '');
   return [
@@ -459,31 +461,92 @@ function doPost(e) {
     }
   }
 
+  if (data.action === 'analyze') {
+    if (!CLAUDE_API_KEY) {
+      return ContentService.createTextOutput(JSON.stringify({ok:false, error:'API key not set in Apps Script'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    const imageBase64 = data.imageBase64;
+    const prompt = `You are analyzing a trading chart screenshot with trade annotations. Extract the following fields from the visible trade label/annotation:
+- label: Short trade name/ID (e.g., "T1", "Setup A")
+- direction: "long" or "short"
+- entry_criteria: List of entry conditions (e.g., ["H&S rejection", "POC retest"])
+- stop_size_pts: Stop loss in points (number only, or null if not visible)
+- pnl: P&L in dollars (number, can be negative, or null if not visible)
+- r_multiple: Risk/reward multiple (e.g., 2.3, or null if not visible)
+- execution: Brief note on how entry happened (e.g., "limit order", "market", or empty)
+- notes: Any additional observations from the chart
+
+Return ONLY valid JSON with these exact keys. If a field is not visible or unclear, set to null or empty string. Entry_criteria should always be an array of strings.`;
+
+    try {
+      const response = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+        method: 'post',
+        headers: {
+          'x-api-key': CLAUDE_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json'
+        },
+        payload: JSON.stringify({
+          model: 'claude-opus-4-6',
+          max_tokens: 500,
+          messages: [{
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: 'image/png',
+                  data: imageBase64
+                }
+              },
+              { type: 'text', text: prompt }
+            ]
+          }]
+        }),
+        muteHttpExceptions: true
+      });
+
+      const result = JSON.parse(response.getContentText());
+      if (!result.content || !result.content[0]) {
+        return ContentService.createTextOutput(JSON.stringify({ok:false, error:'No response from API'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+
+      const text = result.content[0].text;
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        return ContentService.createTextOutput(JSON.stringify({ok:false, error:'Could not parse JSON from response'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+
+      const extracted = JSON.parse(jsonMatch[0]);
+      return ContentService.createTextOutput(JSON.stringify({
+        ok: true,
+        extracted: {
+          lb: extracted.label || '',
+          dir: extracted.direction || '',
+          entry: Array.isArray(extracted.entry_criteria) ? extracted.entry_criteria : [],
+          ss: extracted.stop_size_pts !== null ? extracted.stop_size_pts : null,
+          pnl: extracted.pnl !== null ? extracted.pnl : null,
+          rr: extracted.r_multiple !== null ? extracted.r_multiple : null,
+          exec: extracted.execution || '',
+          notes: extracted.notes || ''
+        }
+      }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch(err) {
+      return ContentService.createTextOutput(JSON.stringify({ok:false, error:err.toString()}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
   return ContentService.createTextOutput(JSON.stringify({ok:true}))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function doGet(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const rows = sheet.getDataRange().getValues();
-  const trades = [];
-  for (let i = 1; i < rows.length; i++) {
-    const r = rows[i];
-    if (!r[0]) continue;
-    trades.push({
-      id: r[0], date: r[1], time: r[2], lb: r[3], account: r[4], session: r[5],
-      inst: r[6], dir: r[7], mc: r[8], setup: r[9],
-      entry: r[10] ? String(r[10]).split(',').map(function(s){return s.trim();}).filter(Boolean) : [],
-      ss: r[11] === '' ? null : r[11],
-      contracts: r[12] === '' ? null : r[12],
-      pnl: r[13] === '' ? null : r[13],
-      rr: r[14] === '' ? null : r[14],
-      exec: r[15], protected: r[16], grade: r[17], notes: r[18]
-    });
-  }
-  return ContentService.createTextOutput(JSON.stringify({ok:true, trades:trades}))
-    .setMimeType(ContentService.MimeType.JSON);
-}</div>
+</div>
 
     <button class="btn" onclick="copyScript()" style="margin-bottom:1.25rem;font-size:12px;padding:6px 14px">Copy script</button>
 
@@ -938,36 +1001,52 @@ async function analyzeChart(b64){
   try{
     const resp=await fetch(GS_URL,{
       method:'POST',
-      body:JSON.stringify({action:'analyze',image:b64}),
+      body:JSON.stringify({action:'analyze',imageBase64:b64}),
       headers:{'Content-Type':'text/plain'}
     });
     clearInterval(iv);bar.style.display='none';
     const data=await resp.json();
     if(!data.ok){throw new Error(data.error||'Unknown error');}
-    aiT=data.trades||[];
+    const extracted=data.extracted||{};
+    aiT=[{
+      label:extracted.lb||'',
+      direction:extracted.dir||'',
+      entry:extracted.entry||[],
+      pnl:extracted.pnl,
+      rr:extracted.rr,
+      exec:extracted.exec||'',
+      notes:extracted.notes||'',
+      ss:extracted.ss
+    }];
     renderAiCards(aiT);
   }catch(err){
     clearInterval(iv);bar.style.display='none';
     document.getElementById('aibox').style.display='block';
-    document.getElementById('ailist').innerHTML=`<p style="font-size:12px;color:var(--red)">Error: ${err.message}. Check your Apps Script URL in Settings.</p>`;
+    document.getElementById('ailist').innerHTML=`<p style="font-size:12px;color:var(--red)">Error: ${err.message}. Check your Apps Script URL and Claude API key in the script.</p>`;
   }
 }
 
 function renderAiCards(list){
   document.getElementById('aibox').style.display='block';
   if(!list.length){
-    document.getElementById('ailist').innerHTML='<p style="font-size:12px;color:var(--muted)">No trade labels found. Fill in manually below.</p>';
+    document.getElementById('ailist').innerHTML='<p style="font-size:12px;color:var(--muted)">No trade data extracted. Fill in manually below.</p>';
     return;
   }
-  document.getElementById('ailist').innerHTML=list.map((t,i)=>`
-    <div class="aicard" id="aic-${i}" onclick="prefill(${i})">
+  const html=list.map((t,i)=>{
+    const dir=t.direction?t.direction.toLowerCase():'';
+    const dirBadge=dir?`<span class="badge ${dir==='long'?'win':'loss'}" style="margin-left:6px">${t.direction}</span>`:'';
+    const plBadge=t.pnl!=null?`<span class="badge ${t.pnl>=0?'win':'loss'}" style="margin-left:4px">$${t.pnl.toFixed(2)}</span>`:'';
+    const entryStr=t.entry&&Array.isArray(t.entry)?t.entry.join(', '):'';
+    const notes=t.notes||'';
+    const subtext=entryStr+(notes?` — ${notes}`:'');
+    return `<div class="aicard" id="aic-${i}" onclick="prefill(${i})">
       <div style="font-size:12px;font-weight:600;margin-bottom:3px;color:var(--text)">
-        ${t.label||'Trade'}
-        ${t.direction?`<span class="badge ${t.direction==='Long'?'win':'loss'}" style="margin-left:6px">${t.direction}</span>`:''}
-        ${t.result&&t.result!=='Unknown'?`<span class="badge ${t.result==='Win'?'win':'loss'}" style="margin-left:4px">${t.result}</span>`:''}
+        ${t.label||'Trade'}${dirBadge}${plBadge}
       </div>
-      <div style="font-size:11px;color:var(--muted)">${t.notes||''}</div>
-    </div>`).join('');
+      <div style="font-size:11px;color:var(--muted)">${subtext}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('ailist').innerHTML=html;
 }
 
 function prefill(i){
@@ -976,20 +1055,21 @@ function prefill(i){
   const t=aiT[i];
 
   if(t.label) document.getElementById('td-lb').value=t.label;
-  // Parse pnl — handle formats like "+8pts", "8.25", "-4.25pts"
-  if(t.pnl!=null){
-    const pv=parseFloat(String(t.pnl).replace(/[^0-9.\-+]/g,''));
-    if(!isNaN(pv)) document.getElementById('td-pl').value=pv;
-  }
-  if(t.rr!=null) document.getElementById('td-rr').value=t.rr;
+  if(t.pnl!=null) document.getElementById('td-pl').value=parseFloat(t.pnl);
+  if(t.rr!=null) document.getElementById('td-rr').value=parseFloat(t.rr);
+  if(t.ss!=null) document.getElementById('td-ss').value=parseFloat(t.ss);
   if(t.notes) document.getElementById('td-nt').value=t.notes;
-  const _nd=new Date();document.getElementById('td-dt').value=(_nd.getMonth()+1).toString().padStart(2,'0')+'/'+_nd.getDate().toString().padStart(2,'0')+'/'+_nd.getFullYear();
+  if(t.exec) document.getElementById('td-ex').value=t.exec;
+  
+  const _nd=new Date();
+  document.getElementById('td-dt').value=(_nd.getMonth()+1).toString().padStart(2,'0')+'/'+_nd.getDate().toString().padStart(2,'0')+'/'+_nd.getFullYear();
   document.getElementById('td-tm').value=_nd.getHours().toString().padStart(2,'0')+':'+_nd.getMinutes().toString().padStart(2,'0');
 
-  if(t.direction) setTagByText('td-dr',t.direction);
-  if(t.mc) setTagByText('td-mc',t.mc);
-  if(t.setup) setTagByText('td-su',t.setup);
-  if(t.exec) setTagByText('td-ex',t.exec);
+  // Normalize direction: "long"/"short" → match tag
+  if(t.direction){
+    const dir=t.direction.toLowerCase();
+    setTagByText('td-dr',dir==='long'?'Long':dir==='short'?'Short':'');
+  }
 
   // Multi-select entry criteria
   if(t.entry&&t.entry.length){
