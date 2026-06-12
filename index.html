@@ -715,7 +715,7 @@ Return ONLY valid JSON with these exact keys. If a field is not visible or uncle
 <script>
 let T=[];
 try{T=JSON.parse(localStorage.getItem('tj_v6')||'[]');}catch(e){}
-const APP_VERSION='v6.4';
+const APP_VERSION='v6.5';
 console.log('Trade Journal '+APP_VERSION);
 let imgB64=null,imgMime='image/png',aiT=[],sortCol='date',sortDir=1,selectedIds=new Set();
 let GS_URL='';
@@ -1012,19 +1012,19 @@ async function analyzeChart(b64){
     console.log('Apps Script response:',text);
     const data=JSON.parse(text);
     if(!data.ok){throw new Error(data.error||'Unknown error');}
-    const extracted=data.extracted||{};
-    aiT=[{
-      label:extracted.lb||'',
-      direction:extracted.dir||'',
-      entry:extracted.entry||[],
-      pnl:extracted.pnl,
-      rr:extracted.rr,
-      exec:extracted.exec||'',
-      notes:extracted.notes||'',
-      ss:extracted.ss,
-      mc:extracted.mc||'',
-      setup:extracted.setup||''
-    }];
+    const list=Array.isArray(data.trades)?data.trades:(data.extracted?[data.extracted]:[]);
+    aiT=list.map(x=>({
+      label:x.lb||'',
+      direction:x.dir||'',
+      entry:x.entry||[],
+      pnl:x.pnl,
+      rr:x.rr,
+      exec:x.exec||'',
+      notes:x.notes||'',
+      ss:x.ss,
+      mc:x.mc||'',
+      setup:x.setup||''
+    }));
     renderAiCards(aiT);
   }catch(err){
     clearInterval(iv);bar.style.display='none';
